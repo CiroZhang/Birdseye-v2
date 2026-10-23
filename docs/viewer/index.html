@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Birdseye Rally Viewer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Barlow+Condensed:wght@500;600&display=swap">
+<style>
+/* Layout: broadcast-booth split. 3D court left, the back-view feed + pipeline readout right,
+   one transport bar across the bottom. Single dark look (it is a video monitor). */
+:root {
+  --bg: #0b0f14; --panel: #121821; --panel-2: #18202b; --line: #243040;
+  --ink: #e6ebf1; --ink-dim: #93a1b3; --ink-faint: #5f6e80;
+  --tape: #f2c94c;        /* DroneData court tape is yellow */
+  --near: #4fb3ff; --far: #ff7a6b; --gt: #f4f4f4; --v2: #f2c94c; --racket: #c38bff;
+  --good: #5fd39a; --warn: #f0a35c;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 var(--body); overflow: hidden; }
+#app { height: 100%; display: grid; grid-template-rows: auto 1fr auto; }
+header { display: flex; align-items: center; gap: 16px; padding: 10px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+header h1 { font: 600 22px/1 var(--display); letter-spacing: 0.02em; margin: 0; text-transform: uppercase; }
+header h1 span { color: var(--tape); }
+header h1 a { color: inherit; text-decoration: none; }
+header h1 a:hover span { text-decoration: underline; }
+body.embed header h1, body.embed header .sub { display: none; }
+header .sub { color: var(--ink-dim); font-size: 12.5px; flex: 1; min-width: 200px; }
+select, button { font: 500 12.5px var(--mono); color: var(--ink); background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--ink-faint); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--tape); outline-offset: 2px; }
+main { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); min-height: 0; }
+#stage { position: relative; min-height: 0; border-right: 1px solid var(--line); }
+#stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.chip { position: absolute; font: 500 11px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-dim); background: rgba(11,15,20,0.78); border: 1px solid var(--line); border-radius: 5px; padding: 4px 8px; }
+#stage .chip.tl { top: 12px; left: 12px; }
+#viewbtns { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; }
+#viewbtns button.on { border-color: var(--tape); color: var(--tape); }
+#shotcard { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); font: 500 13px var(--mono); background: rgba(11,15,20,0.85); border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; white-space: nowrap; display: flex; gap: 12px; align-items: center; }
+#shotcard .side { font-weight: 600; }
+#hint { position: absolute; left: 12px; bottom: 14px; font-size: 11px; color: var(--ink-faint); line-height: 1.4; }
+aside { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
+#feed { position: relative; background: #000; aspect-ratio: 16 / 9; width: 100%; flex-shrink: 0; }
+#feed video, #feed canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+#feed .chip { top: 8px; left: 8px; }
+#readout { padding: 14px 16px 18px; display: flex; flex-direction: column; gap: 16px; }
+.stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.stat { background: var(--panel); padding: 10px 12px; min-width: 0; }
+.stat .n { font: 600 24px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.stat .l { font-size: 11.5px; color: var(--ink-dim); }
+h2 { font: 600 15px var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-dim); margin: 0 0 8px; }
+.layers { display: flex; flex-wrap: wrap; gap: 6px; }
+.layers label { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 5px 11px 5px 9px; cursor: pointer; user-select: none; }
+.layers input { accent-color: var(--tape); margin: 0; }
+.sw { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.shots-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font: 12.5px var(--mono); font-variant-numeric: tabular-nums; }
+th { text-align: left; font-weight: 500; color: var(--ink-faint); padding: 4px 6px; border-bottom: 1px solid var(--line); }
+td { padding: 4px 6px; border-bottom: 1px solid #1a2230; }
+tr.shot { cursor: pointer; }
+tr.shot:hover td { background: var(--panel-2); }
+tr.shot.cur td { background: #2a2614; }
+.tag { font-size: 11px; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--ink-dim); }
+.about { font-size: 13px; color: var(--ink-dim); max-width: 64ch; }
+.about p { margin: 0 0 8px; }
+.about b { color: var(--ink); font-weight: 500; }
+footer { border-top: 1px solid var(--line); padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+#play { width: 38px; height: 38px; border-radius: 50%; background: var(--tape); color: #1a1405; border: none; font-size: 14px; padding: 0; }
+.speeds { display: flex; gap: 2px; }
+.speeds button.on { background: var(--tape); color: #1a1405; border-color: var(--tape); }
+#track { position: relative; height: 34px; }
+#ticks-d, #ticks-l { position: absolute; left: 0; right: 0; height: 9px; }
+#ticks-d { top: 0; } #ticks-l { bottom: 0; }
+.tk { position: absolute; width: 2px; height: 9px; transform: translateX(-1px); border-radius: 1px; }
+#ticks-d .tk { background: var(--v2); }
+#ticks-l .tk { background: var(--gt); opacity: 0.8; }
+#scrub { position: absolute; left: 0; right: 0; top: 12px; width: 100%; margin: 0; -webkit-appearance: none; appearance: none; height: 10px; background: transparent; }
+#scrub::-webkit-slider-runnable-track { height: 4px; background: var(--line); border-radius: 2px; }
+#scrub::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5px; border-radius: 50%; background: var(--tape); }
+#scrub::-moz-range-track { height: 4px; background: var(--line); border-radius: 2px; }
+#scrub::-moz-range-thumb { width: 14px; height: 14px; border: none; border-radius: 50%; background: var(--tape); }
+#clock { font: 12.5px var(--mono); color: var(--ink-dim); font-variant-numeric: tabular-nums; text-align: right; min-width: 120px; }
+.tracklegend { font-size: 10.5px; color: var(--ink-faint); display: flex; gap: 12px; }
+#loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--ink-dim); font: 13px var(--mono); }
+@media (max-width: 860px) {
+  body { overflow: auto; }
+  #app { height: auto; }
+  main { grid-template-columns: minmax(0, 1fr); }
+  #stage { height: 56vh; border-right: none; border-bottom: 1px solid var(--line); }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  footer { position: sticky; bottom: 0; background: var(--bg); grid-template-columns: auto minmax(0, 1fr); }
+  .speeds, #clock { display: none; }
+  #hint { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div id="app">
+  <header>
+    <h1><a href="../" title="Project page">Birdseye <span>v2</span></a></h1>
+    <div class="sub">One small model turns the back drone's 2D detections into players, rackets, shuttle and hits in 3D. No VIMO or SMPL when it runs. Top-drone ground truth shown for comparison.</div>
+    <label for="rally" class="sr" hidden>Rally</label>
+    <select id="rally" aria-label="Rally"></select>
+  </header>
+  <main>
+    <section id="stage">
+      <div id="loading">Loading rallies…</div>
+      <div class="chip tl" id="stagechip">3D reconstruction</div>
+      <div id="viewbtns">
+        <button id="v-orbit" class="on">Orbit</button>
+        <button id="v-cam">Back camera</button>
+        <button id="v-top">Top</button>
+        <button id="v-side">Side</button>
+      </div>
+      <div id="hint">drag to orbit · scroll to zoom · shift+drag to pan</div>
+      <div id="shotcard" hidden></div>
+    </section>
+    <aside>
+      <div id="feed">
+        <video id="video" muted playsinline preload="auto"></video>
+        <canvas id="overlay"></canvas>
+        <div class="chip">Back drone · pipeline input</div>
+      </div>
+      <div id="readout">
+        <div class="stats">
+          <div class="stat"><div class="n" id="s-err">–</div><div class="l">median 3D error vs GT</div></div>
+          <div class="stat"><div class="n" id="s-mean">–</div><div class="l">mean 3D error</div></div>
+          <div class="stat"><div class="n" id="s-hits">–</div><div class="l">shots found / hits labeled</div></div>
+          <div class="stat"><div class="n" id="s-rec">–</div><div class="l">labeled hits recovered (±3 fr)</div></div>
+          <div class="stat"><div class="n" id="s-perr">–</div><div class="l">median player error vs top view</div></div>
+        </div>
+        <div>
+          <h2>Layers</h2>
+          <div class="layers">
+            <label><input type="checkbox" id="L-players" checked><span class="sw" style="background:var(--near)"></span>Players</label>
+            <label><input type="checkbox" id="L-racket" checked><span class="sw" style="background:var(--racket)"></span>Rackets</label>
+            <label><input type="checkbox" id="L-v2" checked><span class="sw" style="background:var(--v2)"></span>Shuttle (ours)</label>
+            <label><input type="checkbox" id="L-gt" checked><span class="sw" style="background:var(--gt)"></span>Shuttle ground truth</label>
+            <label><input type="checkbox" id="L-pgt" checked><span class="sw" style="background:transparent;border:2px solid var(--gt)"></span>Player ground truth</label>
+            <label><input type="checkbox" id="L-arcs"><span class="sw" style="background:var(--ink-faint)"></span>Shot arcs</label>
+            <label><input type="checkbox" id="L-2d" checked><span class="sw" style="background:#7fe0ff"></span>2D detections on video</label>
+          </div>
+        </div>
+        <div>
+          <h2>Shots</h2>
+          <div class="shots-wrap"><table>
+            <thead><tr><th>#</th><th>time</th><th>hitter</th><th>speed</th><th>apex</th><th>anchor</th></tr></thead>
+            <tbody id="shots"></tbody>
+          </table></div>
+        </div>
+        <div class="about">
+          <h2>How it works</h2>
+          <p><b>Input:</b> the back drone video, calibrated by BirdsCourt. Four 2D detectors are the only inputs: the court camera, TrackNetV3 for the shuttle, YOLOv8x-pose for the players and YOLOv8x for rackets. Every detection becomes a camera ray in court coordinates, so the model never sees pixels or which way the camera points.</p>
+          <p><b>3D:</b> One 6.6-million-parameter transformer reads every player, the shuttle and the rackets across the whole rally, and drives a small physical model of it. Each player is a skeleton with fixed bone lengths, held up only while a foot is on the floor. Each racket is a rigid stick in one hand, the model's choice for the whole rally, turned by the wrist, and it only counts a racket detection that is within reach of that wrist. The model also says who hits when. It was trained on about 4,400 broadcast rallies. During training only, VIMO showed it how each bone runs toward or away from the camera, wherever VIMO agreed with the 2D keypoints; triangulated poses from a few separate drone matches helped too. At run time it needs neither. The shuttle is a chain of gravity-and-drag flights between the model's hits, starting at the hitter's racket and fitted to the shuttle detections; the hitters' court sides come from the model, and a flight that cannot explain its detections gets the hit the model was least sure of. The drone rallies shown here were never trained on.</p>
+          <p><b>Ground truth</b> (white) is the shuttle triangulated from both drones; the white floor rings are the players as annotated in the top drone view. The pipeline never sees the top drone. On the video, the cyan dot is the TrackNet detection and the yellow ring is the 3D fit projected back into the image.</p>
+        </div>
+      </div>
+    </aside>
+  </main>
+  <footer>
+    <button id="play" aria-label="Play">▶</button>
+    <div class="speeds"><button data-s="1" class="on">1×</button><button data-s="0.5">0.5×</button><button data-s="0.25">0.25×</button></div>
+    <div>
+      <div id="track"><div id="ticks-d"></div><input type="range" id="scrub" min="0" max="1" step="1" value="0" aria-label="Frame"><div id="ticks-l"></div></div>
+      <div class="tracklegend"><span>▲ yellow: shots found by the pipeline</span><span>▼ white: labeled hits</span></div>
+    </div>
+    <div id="clock">0 / 0</div>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const W = 6.1, L = 13.4, NET_Y = 6.7, NET_H = 1.55, SW = 5.18, SS = 1.98, LS = 0.76, FPS = 30;
+const COL = { near: 0x4fb3ff, far: 0xff7a6b, gt: 0xf4f4f4, v2: 0xf2c94c, racket: 0xc38bff, tape: 0xf2c94c };
+const BONES_COCO = [[5,7],[7,9],[6,8],[8,10],[5,6],[5,11],[6,12],[11,12],[11,13],[13,15],[12,14],[14,16]];
+// SMPL-24 kinematic tree (TRAM/VIMO bodies)
+const SMPL_PARENT = [-1, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 12, 13, 14, 16, 17, 18, 19, 20, 21];
+const BONES_SMPL = SMPL_PARENT.map((p, i) => [p, i]).filter(([p]) => p >= 0);
+let BONES = BONES_COCO;
+const isSmpl = () => R && R.skel === "smpl24";
+const T = (p) => (p ? new THREE.Vector3(p[0] - W / 2, p[2], -(p[1] - NET_Y)) : null);
+const Tdir = (d) => new THREE.Vector3(d[0], d[2], -d[1]);
+const $ = (id) => document.getElementById(id);
+if (window.self !== window.top) document.body.classList.add("embed"); // inside the project page: the page carries the title
+
+// ---------- scene ----------
+const stage = $("stage");
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+stage.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b0f14);
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
+scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+const sun = new THREE.DirectionalLight(0xffffff, 0.6); sun.position.set(3, 10, 6); scene.add(sun);
+
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(W + 7, L + 7), new THREE.MeshStandardMaterial({ color: 0x1c232c, roughness: 1 }));
+floor.rotation.x = -Math.PI / 2; floor.position.y = -0.004; scene.add(floor);
+const courtM = new THREE.Mesh(new THREE.PlaneGeometry(W, L), new THREE.MeshStandardMaterial({ color: 0x1f5a4a, roughness: 0.9 }));
+courtM.rotation.x = -Math.PI / 2; scene.add(courtM);
+const tapeMat = new THREE.MeshBasicMaterial({ color: COL.tape });
+function line(x1, y1, x2, y2) { // court coords
+  const a = T([x1, y1, 0]), b = T([x2, y2, 0]);
+  const len = a.distanceTo(b);
+  const m = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.01, len), tapeMat);
+  m.position.copy(a.clone().add(b).multiplyScalar(0.5)); m.position.y = 0.006;
+  m.rotation.y = Math.atan2(b.x - a.x, b.z - a.z); scene.add(m);
+}
+const sx = (W - SW) / 2;
+line(0, 0, W, 0); line(0, L, W, L); line(0, 0, 0, L); line(W, 0, W, L);
+line(sx, 0, sx, L); line(W - sx, 0, W - sx, L);
+line(0, NET_Y - SS, W, NET_Y - SS); line(0, NET_Y + SS, W, NET_Y + SS);
+line(0, LS, W, LS); line(0, L - LS, W, L - LS);
+line(W / 2, 0, W / 2, NET_Y - SS); line(W / 2, NET_Y + SS, W / 2, L);
+const net = new THREE.Mesh(new THREE.PlaneGeometry(W + 0.1, 0.76), new THREE.MeshBasicMaterial({ color: 0xdfe6ee, transparent: true, opacity: 0.22, side: THREE.DoubleSide }));
+net.position.set(0, NET_H - 0.38, 0); scene.add(net);
+const netTop = new THREE.Mesh(new THREE.BoxGeometry(W + 0.1, 0.03, 0.02), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+netTop.position.set(0, NET_H, 0); scene.add(netTop);
+[-1, 1].forEach((s) => { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, NET_H, 8), new THREE.MeshStandardMaterial({ color: 0x8892a0 })); p.position.set(s * (W / 2 + 0.05), NET_H / 2, 0); scene.add(p); });
+
+// back camera marker
+const camMarker = new THREE.Group(); scene.add(camMarker);
+
+// players: pool of skeletons
+const sphereG = new THREE.SphereGeometry(0.035, 8, 6), cylG = new THREE.CylinderGeometry(0.022, 0.022, 1, 6), headG = new THREE.SphereGeometry(0.1, 12, 10);
+const mats = { n: new THREE.MeshStandardMaterial({ color: COL.near }), f: new THREE.MeshStandardMaterial({ color: COL.far }) };
+const skels = [];
+function getSkel(i) {
+  while (skels.length <= i) {
+    const g = new THREE.Group();
+    const joints = [...Array(24)].map(() => { const m = new THREE.Mesh(sphereG, mats.n); g.add(m); return m; });
+    const bones = BONES_SMPL.map(() => { const m = new THREE.Mesh(cylG, mats.n); g.add(m); return m; });
+    const head = new THREE.Mesh(headG, mats.n); g.add(head);
+    scene.add(g); skels.push({ g, joints, bones, head });
+  }
+  return skels[i];
+}
+const UP = new THREE.Vector3(0, 1, 0);
+function placeCyl(m, a, b) {
+  const d = b.clone().sub(a), len = d.length();
+  if (len < 1e-4) { m.visible = false; return; }
+  m.visible = true; m.position.copy(a).add(b).multiplyScalar(0.5); m.scale.set(1, len, 1);
+  m.quaternion.setFromUnitVectors(UP, d.divideScalar(len));
+}
+
+// mannequin for COCO-17 bodies: tapered limbs (radius at parent -> child), joint balls, chest/pelvis shells, feet
+const LIMBS = [[5, 7, 0.05, 0.04], [7, 9, 0.04, 0.032], [6, 8, 0.05, 0.04], [8, 10, 0.04, 0.032],
+               [11, 13, 0.075, 0.052], [13, 15, 0.05, 0.036], [12, 14, 0.075, 0.052], [14, 16, 0.05, 0.036]];
+const BALLS = [[5, 0.05], [6, 0.05], [7, 0.04], [8, 0.04], [9, 0.033], [10, 0.033], [13, 0.052], [14, 0.052], [15, 0.036], [16, 0.036]];
+const unitBall = new THREE.SphereGeometry(1, 20, 14), footG = new THREE.BoxGeometry(0.09, 0.07, 0.25);
+const skinMats = {}, darkMats = {};
+for (const k of ["n", "f"]) {
+  const c = new THREE.Color(COL[k === "n" ? "near" : "far"]);
+  skinMats[k] = new THREE.MeshStandardMaterial({ color: c, roughness: 0.45, metalness: 0.05 });
+  darkMats[k] = new THREE.MeshStandardMaterial({ color: c.clone().multiplyScalar(0.55), roughness: 0.6 });
+}
+const mannequins = [];
+function getMannequin(i) {
+  while (mannequins.length <= i) {
+    const g = new THREE.Group(), add = (geo) => { const m = new THREE.Mesh(geo, skinMats.n); g.add(m); return m; };
+    const limbs = LIMBS.map(([, , ra, rb]) => add(new THREE.CylinderGeometry(rb, ra, 1, 14)));
+    const balls = BALLS.map(() => add(unitBall));
+    mannequins.push({ g, limbs, balls, chest: add(unitBall), pelvis: add(unitBall), belly: add(new THREE.CylinderGeometry(0.12, 0.13, 1, 16)),
+                      neck: add(new THREE.CylinderGeometry(0.045, 0.05, 1, 10)), head: add(unitBall), hands: [add(unitBall), add(unitBall)],
+                      feet: [add(footG), add(footG)] });
+    scene.add(g);
+  }
+  return mannequins[i];
+}
+const _m4 = new THREE.Matrix4();
+function placeShell(m, c, x, y, s) { // ellipsoid at c, axes x (side) and y (up, made orthogonal to x), half-sizes s
+  const yy = y.clone().sub(x.clone().multiplyScalar(y.dot(x))).normalize(), z = new THREE.Vector3().crossVectors(x, yy);
+  m.position.copy(c); m.quaternion.setFromRotationMatrix(_m4.makeBasis(x, yy, z)); m.scale.set(...s); m.visible = true;
+}
+function drawMannequin(s, pts, side) {
+  const skin = skinMats[side], dark = darkMats[side];
+  s.g.children.forEach((c) => { c.material = skin; });
+  LIMBS.forEach(([a, b], i) => { if (pts[a] && pts[b]) placeCyl(s.limbs[i], pts[a], pts[b]); else s.limbs[i].visible = false; });
+  BALLS.forEach(([j, r], i) => { const m = s.balls[i]; m.visible = !!pts[j]; if (pts[j]) { m.position.copy(pts[j]); m.scale.setScalar(r); } });
+  [s.chest, s.pelvis, s.belly, s.neck, s.head, ...s.feet, ...s.hands].forEach((m) => { m.visible = false; });
+  if (![5, 6, 11, 12].every((j) => pts[j])) return;
+  const sho = pts[5].clone().add(pts[6]).multiplyScalar(0.5), hip = pts[11].clone().add(pts[12]).multiplyScalar(0.5);
+  const spine = sho.clone().sub(hip), sl = spine.length(); if (sl < 0.1) return;
+  const up = spine.clone().divideScalar(sl);
+  const xs = pts[5].clone().sub(pts[6]).normalize(), xh = pts[11].clone().sub(pts[12]).normalize();
+  const sw = pts[5].distanceTo(pts[6]), hw = pts[11].distanceTo(pts[12]);
+  placeShell(s.chest, sho.clone().addScaledVector(up, -0.17 * sl), xs, up, [sw * 0.5, sl * 0.28, 0.105]);
+  placeShell(s.pelvis, hip.clone().addScaledVector(up, 0.06), xh, up, [hw * 0.8, 0.12, 0.1]);
+  placeCyl(s.belly, hip.clone().addScaledVector(up, 0.1), sho.clone().addScaledVector(up, -0.3 * sl));
+  s.belly.material = dark; s.pelvis.material = dark;
+  // head: an ellipsoid over the face keypoints, joined to the shoulders by the neck
+  const fp = pts.slice(0, 5).filter(Boolean);
+  const hc = fp.length ? fp.reduce((a, b) => a.add(b), new THREE.Vector3()).multiplyScalar(1 / fp.length) : sho.clone().addScaledVector(up, 0.25);
+  const hu = hc.clone().sub(sho).normalize();
+  placeCyl(s.neck, sho.clone().addScaledVector(up, -0.02), hc.clone().addScaledVector(hu, -0.08));
+  placeShell(s.head, hc, xs, hu, [0.085, 0.11, 0.095]);
+  // facing: horizontal, across the hips, toward the nose (or where the knees point when the face is missing)
+  const fwd = new THREE.Vector3().crossVectors(UP, xh).setY(0).normalize();
+  const cue = pts[0] ? pts[0].clone().sub(sho) : (pts[13] && pts[14] ? pts[13].clone().add(pts[14]).multiplyScalar(0.5).sub(hip) : null);
+  if (cue && cue.setY(0).dot(fwd) < 0) fwd.negate();
+  // hands: a fist just past each wrist, along the forearm
+  [[7, 9], [8, 10]].forEach(([e, w], k) => {
+    if (!pts[e] || !pts[w]) return;
+    const m = s.hands[k]; m.visible = true;
+    m.position.copy(pts[w]).addScaledVector(pts[w].clone().sub(pts[e]).normalize(), 0.055); m.scale.set(0.042, 0.048, 0.042);
+  });
+  // feet: a shoe from the ankle forward along the facing, resting on the floor
+  [15, 16].forEach((a, k) => {
+    if (!pts[a]) return;
+    const m = s.feet[k]; m.visible = true; m.material = dark;
+    const c = pts[a].clone().addScaledVector(fwd, 0.07); c.y = Math.max(0.035, pts[a].y - 0.04);
+    m.position.copy(c); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), fwd);
+  });
+}
+
+// rackets: one fixed-size model per player (675 mm overall, head 290 x 220 mm)
+const racketMat = new THREE.MeshStandardMaterial({ color: COL.racket, emissive: 0x3a1f66 });
+const racketGuess = new THREE.MeshStandardMaterial({ color: COL.racket, emissive: 0x3a1f66, transparent: true, opacity: 0.35 });
+const rackets = [];
+function getRacket(i) {
+  while (rackets.length <= i) {
+    const g = new THREE.Group();
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 1, 6), racketMat);
+    const head = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.07, 6, 28), racketMat);
+    g.add(handle); g.add(head); scene.add(g); rackets.push({ g, handle, head });
+  }
+  return rackets[i];
+}
+// top-view annotated player positions: white floor rings
+const pgRings = [];
+const pgGeo = new THREE.RingGeometry(0.16, 0.22, 28), pgMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
+function getPg(i) { while (pgRings.length <= i) { const m = new THREE.Mesh(pgGeo, pgMat); m.rotation.x = -Math.PI / 2; scene.add(m); pgRings.push(m); } return pgRings[i]; }
+
+// shuttles + trails
+function ball(color, r, emissive) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 10), new THREE.MeshStandardMaterial({ color, emissive: emissive || 0x000000 }));
+  scene.add(m); return m;
+}
+const v2Ball = ball(COL.v2, 0.06, 0x7a5a00), gtBall = ball(COL.gt, 0.045, 0x333333);
+const v2Shadow = new THREE.Mesh(new THREE.CircleGeometry(0.07, 16), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45 }));
+v2Shadow.rotation.x = -Math.PI / 2; scene.add(v2Shadow);
+function trail(color, n, opacity) {
+  const pos = new Float32Array(n * 3), g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  const l = new THREE.Line(g, new THREE.LineBasicMaterial({ color, transparent: true, opacity })); scene.add(l);
+  return { l, g, pos, n };
+}
+const v2Trail = trail(COL.v2, 24, 0.9), gtTrail = trail(COL.gt, 24, 0.6);
+let arcs = [], gtCloud = null, hitMarks = [];
+
+// ---------- camera controls ----------
+let mode = "orbit";
+const sph = { r: 17, th: 0.55, ph: 0.95 }, target = new THREE.Vector3(0, 0.8, 0);
+function applyOrbit() {
+  const p = Math.max(0.05, Math.min(Math.PI / 2 - 0.02, sph.ph));
+  camera.up.set(0, 1, 0);
+  camera.position.set(target.x + sph.r * Math.sin(p) * Math.sin(sph.th), target.y + sph.r * Math.cos(p), target.z + sph.r * Math.sin(p) * Math.cos(sph.th));
+  camera.lookAt(target);
+  if (camera.fov !== 45) { camera.fov = 45; camera.updateProjectionMatrix(); }
+}
+function setMode(m) {
+  mode = m;
+  ["orbit", "cam", "top", "side"].forEach((k) => $("v-" + k).classList.toggle("on", k === m));
+  if (m === "top") { sph.th = 0; sph.ph = 0.05; sph.r = 19; target.set(0, 0, 0); }
+  if (m === "side") { sph.th = Math.PI / 2; sph.ph = 1.35; sph.r = 15; target.set(0, 1.5, 0); }
+  if (m === "orbit") { sph.th = 0.55; sph.ph = 0.95; sph.r = 17; target.set(0, 0.8, 0); }
+  if (m === "cam") applyBackCam(); else applyOrbit();
+  draw();
+}
+function applyBackCam() {
+  const c = R.cam;
+  camera.position.copy(T(c.c));
+  camera.up.copy(Tdir(c.down).multiplyScalar(-1));
+  camera.lookAt(camera.position.clone().add(Tdir(c.fwd)));
+  camera.fov = c.vfov; camera.updateProjectionMatrix();
+}
+["orbit", "cam", "top", "side"].forEach((k) => $("v-" + k).addEventListener("click", () => setMode(k)));
+let drag = null;
+renderer.domElement.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, y: e.clientY, pan: e.shiftKey || e.button === 2 }; renderer.domElement.setPointerCapture(e.pointerId); });
+renderer.domElement.addEventListener("pointerup", () => (drag = null));
+renderer.domElement.addEventListener("contextmenu", (e) => e.preventDefault());
+renderer.domElement.addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY;
+  if (mode !== "orbit") { mode = "orbit"; ["orbit", "cam", "top", "side"].forEach((k) => $("v-" + k).classList.toggle("on", k === "orbit")); }
+  if (drag.pan) {
+    const s = 0.0025 * sph.r, right = new THREE.Vector3(Math.cos(sph.th), 0, -Math.sin(sph.th));
+    target.addScaledVector(right, -dx * s); target.y = Math.max(0, target.y + dy * s);
+  } else { sph.th -= dx * 0.006; sph.ph -= dy * 0.006; }
+  applyOrbit(); draw();
+});
+renderer.domElement.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  if (mode === "cam") setMode("orbit");
+  sph.r = Math.max(3, Math.min(45, sph.r * (1 + e.deltaY * 0.001))); applyOrbit(); draw();
+}, { passive: false });
+
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false); renderer.domElement.style.width = w + "px"; renderer.domElement.style.height = h + "px";
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  const fd = $("feed"), oc = $("overlay");
+  oc.width = fd.clientWidth * Math.min(window.devicePixelRatio, 2); oc.height = fd.clientHeight * Math.min(window.devicePixelRatio, 2);
+  if (R) { buildTicks(); draw(); }
+}
+window.addEventListener("resize", resize);
+
+// ---------- data ----------
+let DATA = [], R = null, frame = 0, playing = false, speed = 1, clockT = 0, lastTs = null;
+const video = $("video"), scrub = $("scrub");
+const layer = (k) => $("L-" + k).checked;
+document.querySelectorAll(".layers input").forEach((i) => i.addEventListener("change", () => { arcs.forEach((a) => (a.visible = layer("arcs"))); hitMarks.forEach((a) => (a.visible = layer("arcs"))); if (gtCloud) gtCloud.visible = layer("gt"); draw(); }));
+
+function clearRally() {
+  [...arcs, ...hitMarks].forEach((o) => { scene.remove(o); o.geometry.dispose(); });
+  arcs = []; hitMarks = [];
+  if (gtCloud) { scene.remove(gtCloud); gtCloud.geometry.dispose(); gtCloud = null; }
+}
+function loadRally(i) {
+  R = DATA[i]; BONES = isSmpl() ? BONES_SMPL : BONES_COCO; clearRally();
+  R.shots.forEach((s, k) => {
+    const pts = s.path.filter(Boolean).map(T);
+    if (pts.length < 2) return;
+    const g = new THREE.BufferGeometry().setFromPoints(pts);
+    const a = new THREE.Line(g, new THREE.LineBasicMaterial({ color: s.side === "near" ? COL.near : COL.far, transparent: true, opacity: 0.35 }));
+    a.visible = layer("arcs"); scene.add(a); arcs.push(a);
+  });
+  const gp = R.gt_path.map((q) => T(q.slice(1)));
+  gtCloud = new THREE.Points(new THREE.BufferGeometry().setFromPoints(gp), new THREE.PointsMaterial({ color: COL.gt, size: 0.035, transparent: true, opacity: 0.35 }));
+  gtCloud.visible = layer("gt"); scene.add(gtCloud);
+  // camera marker
+  camMarker.clear();
+  const cpos = T(R.cam.c), fwd = Tdir(R.cam.fwd);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.22, 0.22), new THREE.MeshStandardMaterial({ color: 0x9aa7b8 }));
+  body.position.copy(cpos); body.lookAt(cpos.clone().add(fwd)); camMarker.add(body);
+  camMarker.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([cpos, cpos.clone().add(fwd.clone().multiplyScalar(3))]), new THREE.LineBasicMaterial({ color: 0x9aa7b8, transparent: true, opacity: 0.5 })));
+
+  const m = R.metrics;
+  $("s-err").textContent = m.err_median.toFixed(2) + " m";
+  $("s-mean").textContent = m.err_mean.toFixed(2) + " m";
+  $("s-hits").textContent = R.shots.length + " / " + m.hits_labeled;
+  $("s-rec").textContent = Math.round(m.hit_recall * 100) + "%";
+  $("s-perr").textContent = m.player_err_median != null ? m.player_err_median.toFixed(2) + " m" : "–";
+  $("shots").innerHTML = R.shots.map((s, k) => `<tr class="shot" data-k="${k}"><td>${k + 1}</td><td>${(s.t0 / FPS).toFixed(2)}s</td>
+    <td><span class="sw" style="background:var(--${s.side})"></span> ${s.side}</td><td>${s.speed.toFixed(0)} km/h</td><td>${s.apex.toFixed(2)} m</td>
+    <td>${s.anchored ? '<span class="tag">hand</span>' : '<span class="tag">none</span>'}</td></tr>`).join("");
+  document.querySelectorAll("tr.shot").forEach((tr) => tr.addEventListener("click", () => seek(Math.max(0, Math.floor(R.shots[+tr.dataset.k].t0) - 5))));
+  scrub.max = R.n - 1;
+  video.src = R.clip; video.playbackRate = speed;
+  setPlaying(false); seek(0);
+  buildTicks();
+  if (mode === "cam") applyBackCam();
+}
+function buildTicks() {
+  const pct = (t) => (100 * t / Math.max(R.n - 1, 1)).toFixed(3) + "%";
+  $("ticks-d").innerHTML = R.shots.map((s) => `<div class="tk" style="left:${pct(s.t0)}" title="shot at ${(s.t0 / FPS).toFixed(2)}s"></div>`).join("");
+  $("ticks-l").innerHTML = R.labels.map((t) => `<div class="tk" style="left:${pct(t)}"></div>`).join("");
+}
+
+// ---------- per-frame draw ----------
+function setTrail(tr, idx, key) {
+  let c = 0;
+  for (let i = 0; i < tr.n; i++) {
+    const f = idx - i; if (f < 0) break;
+    const p = R.frames[f][key]; if (!p) { if (key === "g") continue; break; }
+    const v = T(p); tr.pos[c * 3] = v.x; tr.pos[c * 3 + 1] = v.y; tr.pos[c * 3 + 2] = v.z; c++;
+  }
+  tr.g.setDrawRange(0, c); tr.g.attributes.position.needsUpdate = true; tr.l.visible = c > 1;
+}
+function curShot(f) { let k = -1; R.shots.forEach((s, i) => { if (f >= s.t0 - 0.5) k = i; }); return k; }
+function draw() {
+  if (!R) return;
+  const F = R.frames[frame];
+  // players
+  let used = 0, usedM = 0;
+  if (layer("players")) F.p.forEach((p) => {
+    const pts = p.j.map(T);
+    if (!isSmpl()) { const m = getMannequin(usedM++); m.g.visible = true; drawMannequin(m, pts, p.s); return; }
+    const s = getSkel(used++), mat = mats[p.s]; s.g.visible = true;
+    s.joints.forEach((m, j) => { m.material = mat; m.visible = !!pts[j] && (isSmpl() ? j !== 15 : j >= 5); if (pts[j]) m.position.copy(pts[j]); });
+    s.bones.forEach((m, b) => { m.material = mat; const bc = BONES[b]; if (bc && pts[bc[0]] && pts[bc[1]]) placeCyl(m, pts[bc[0]], pts[bc[1]]); else m.visible = false; });
+    const hp = (isSmpl() ? [pts[15]] : pts.slice(0, 5)).filter(Boolean);
+    s.head.material = mat; s.head.visible = hp.length > 0;
+    if (hp.length) s.head.position.copy(hp.reduce((a, b) => a.add(b), new THREE.Vector3()).multiplyScalar(1 / hp.length));
+  });
+  for (let i = used; i < skels.length; i++) skels[i].g.visible = false;
+  for (let i = usedM; i < mannequins.length; i++) mannequins[i].g.visible = false;
+  // rackets
+  let ru = 0;
+  if (layer("racket")) F.r.forEach((r) => {
+    const o = getRacket(ru++); o.g.visible = true;
+    const RK = R.racket, mat = r.seen ? racketMat : racketGuess;
+    const u = Tdir(r.u).normalize(), w = T(r.w);
+    const butt = w.clone().addScaledVector(u, -RK.grip);
+    const throat = butt.clone().addScaledVector(u, RK.len - RK.head[0]);
+    o.handle.material = mat; o.head.material = mat;
+    placeCyl(o.handle, butt, throat);
+    o.head.position.copy(throat).addScaledVector(u, RK.head[0] / 2);
+    o.head.scale.set(RK.head[1], RK.head[0], RK.head[1]);
+    // face normal: from the swing (r.n, the head's motion across the shaft) when known, else toward the camera
+    const fwd = r.n ? Tdir(r.n) : Tdir(R.cam.fwd), n = fwd.clone().sub(u.clone().multiplyScalar(fwd.dot(u))).normalize();
+    o.head.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3().crossVectors(u, n), u, n));
+  });
+  for (let i = ru; i < rackets.length; i++) rackets[i].g.visible = false;
+  // player ground truth
+  let pu = 0;
+  if (layer("pgt") && F.pg) F.pg.forEach((q) => { const m = getPg(pu++); m.visible = true; const v = T([q[0], q[1], 0]); m.position.set(v.x, 0.012, v.z); });
+  for (let i = pu; i < pgRings.length; i++) pgRings[i].visible = false;
+  // shuttle
+  const x = F.x ? T(F.x) : null;
+  v2Ball.visible = layer("v2") && !!x; v2Shadow.visible = v2Ball.visible;
+  if (x) { v2Ball.position.copy(x); v2Shadow.position.set(x.x, 0.003, x.z); }
+  if (layer("v2")) setTrail(v2Trail, frame, "x"); else v2Trail.l.visible = false;
+  const g = F.g ? T(F.g) : null;
+  gtBall.visible = layer("gt") && !!g; if (g) gtBall.position.copy(g);
+  if (layer("gt")) setTrail(gtTrail, frame, "g"); else gtTrail.l.visible = false;
+  hitMarks.forEach((h) => h.lookAt(camera.position));
+  renderer.render(scene, camera);
+  drawOverlay(F);
+  // readouts
+  const k = curShot(frame), card = $("shotcard");
+  document.querySelectorAll("tr.shot").forEach((tr) => tr.classList.toggle("cur", +tr.dataset.k === k));
+  if (k >= 0 && frame <= R.shots[k].t1 + 1) {
+    const s = R.shots[k]; card.hidden = false;
+    card.innerHTML = `<span>shot ${k + 1}</span><span class="side" style="color:var(--${s.side})">${s.side} side</span><span>${s.speed.toFixed(0)} km/h</span><span>apex ${s.apex.toFixed(2)} m</span>` +
+      (x && g ? `<span style="color:var(--ink-dim)">err ${x.distanceTo(g).toFixed(2)} m</span>` : "");
+  } else card.hidden = true;
+  $("clock").textContent = `${(frame / FPS).toFixed(2)}s · ${frame + 1}/${R.n}`;
+  scrub.value = frame;
+}
+const oc = $("overlay"), ctx = oc.getContext("2d");
+function drawOverlay(F) {
+  ctx.clearRect(0, 0, oc.width, oc.height);
+  if (!layer("2d")) return;
+  const X = (u) => u[0] * oc.width, Y = (u) => u[1] * oc.height, s = oc.width / 960;
+  ctx.lineWidth = 1.6 * s;
+  if (layer("players")) F.p.forEach((p) => {
+    ctx.strokeStyle = p.s === "n" ? "#4fb3ff" : "#ff7a6b"; ctx.fillStyle = ctx.strokeStyle;
+    BONES.forEach(([a, b]) => { if (p.k[a] && p.k[b]) { ctx.beginPath(); ctx.moveTo(X(p.k[a]), Y(p.k[a])); ctx.lineTo(X(p.k[b]), Y(p.k[b])); ctx.stroke(); } });
+    p.k.forEach((k) => { if (k) { ctx.beginPath(); ctx.arc(X(k), Y(k), 1.8 * s, 0, 7); ctx.fill(); } });
+  });
+  if (layer("racket")) {
+    ctx.strokeStyle = "rgba(195,139,255,0.45)"; ctx.lineWidth = 1 * s;
+    F.rb.forEach((b) => ctx.strokeRect(X(b), Y(b.slice(1)), (b[2] - b[0]) * oc.width, (b[3] - b[1]) * oc.height));
+    ctx.strokeStyle = "#c38bff"; ctx.lineWidth = 3 * s;
+    F.r.forEach((r) => { ctx.globalAlpha = r.seen ? 1 : 0.4; ctx.beginPath(); ctx.moveTo(X(r.px[0]), Y(r.px[0])); ctx.lineTo(X(r.px[1]), Y(r.px[1])); ctx.stroke(); });
+    ctx.globalAlpha = 1; ctx.lineWidth = 1.6 * s;
+  }
+  if (F.d) { ctx.fillStyle = "#7fe0ff"; ctx.beginPath(); ctx.arc(X(F.d), Y(F.d), 3.2 * s, 0, 7); ctx.fill(); }
+  if (layer("v2") && F.xp) { ctx.strokeStyle = "#f2c94c"; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.arc(X(F.xp), Y(F.xp), 7 * s, 0, 7); ctx.stroke(); }
+}
+
+// ---------- transport ----------
+function seek(f) {
+  frame = Math.max(0, Math.min(R.n - 1, f)); clockT = frame / FPS;
+  if (video.readyState >= 1) { try { video.currentTime = (frame + 0.5) / FPS; } catch (e) {} }
+  draw();
+}
+function setPlaying(p) {
+  playing = p; $("play").textContent = p ? "❚❚" : "▶"; $("play").setAttribute("aria-label", p ? "Pause" : "Play");
+  if (p) { if (frame >= R.n - 1) seek(0); lastTs = null; video.play().catch(() => {}); requestAnimationFrame(tick); }
+  else video.pause();
+}
+function tick(ts) {
+  if (!playing) return;
+  if (!video.paused && video.readyState >= 2) clockT = video.currentTime;
+  else { if (lastTs !== null) clockT += (ts - lastTs) / 1000 * speed; }
+  lastTs = ts;
+  const f = Math.min(R.n - 1, Math.floor(clockT * FPS));
+  if (f !== frame) { frame = f; draw(); }
+  if (frame >= R.n - 1 || video.ended) { setPlaying(false); return; }
+  requestAnimationFrame(tick);
+}
+$("play").addEventListener("click", () => setPlaying(!playing));
+scrub.addEventListener("input", () => { if (playing) setPlaying(false); seek(+scrub.value); });
+document.querySelectorAll(".speeds button").forEach((b) => b.addEventListener("click", () => {
+  speed = +b.dataset.s; video.playbackRate = speed;
+  document.querySelectorAll(".speeds button").forEach((x) => x.classList.toggle("on", x === b));
+}));
+window.addEventListener("keydown", (e) => {
+  if (e.target.tagName === "SELECT" || !R) return;
+  if (e.code === "Space") { e.preventDefault(); setPlaying(!playing); }
+  if (e.code === "ArrowRight") { setPlaying(false); seek(frame + 1); }
+  if (e.code === "ArrowLeft") { setPlaying(false); seek(frame - 1); }
+});
+$("rally").addEventListener("change", (e) => loadRally(+e.target.value));
+
+fetch("data.json").then((r) => r.json()).then((d) => {
+  d.sort((a, b) => a.metrics.err_median - b.metrics.err_median); DATA = d; $("loading").remove();
+  $("rally").innerHTML = d.map((r, i) => `<option value="${i}">${r.id} · ${r.metrics.err_median.toFixed(2)} m median</option>`).join("");
+  resize(); applyOrbit(); loadRally(0);
+}).catch(() => { $("loading").textContent = "Could not load the rally data. Reload the page to try again."; });
+</script>

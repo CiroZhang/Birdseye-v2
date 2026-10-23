@@ -1,0 +1,17 @@
+# data, detector outputs, checkpoints and third-party code live outside git (see README)
+/data/
+/outputs/
+/third_party/
+*.pt
+*.pth
+*.pth.tar
+*.npz
+*.mp4
+!docs/viewer/*.mp4
+
+__pycache__/
+*.pyc
+.venv*/
+.ipynb_checkpoints/
+.DS_Store
+Thumbs.db

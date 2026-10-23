@@ -1,0 +1,12 @@
+# tested with Python 3.13, CUDA 12.8 (RTX 5080). The VIMO teacher (tools/fb_vimo.py, tools/drone_vimo.py)
+# runs in a separate environment: see third_party/tram's own requirements (timm 0.6.7, numpy 1.26).
+numpy==2.2.6
+torch>=2.6
+opencv-python==4.11.0.86
+scipy>=1.14
+numba>=0.61
+ultralytics>=8.3
+imageio-ffmpeg>=0.5
+# DroneData download only
+requests
+gdown

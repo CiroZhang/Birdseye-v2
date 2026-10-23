@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Birdseye</title>
+<meta name="description" content="A whole badminton rally in 3D from one camera: players, rackets, shuttle and every hit, from a small model that may only move things the way physics allows.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* A coach's notebook beside the broadcast monitor: paper, court green, the yellow tape of the drone hall.
+   The viewer (viewer/) stays a dark monitor in both themes. */
+:root {
+  --paper: #f5f3ec; --paper-2: #ebe8dd; --rule: #d6d1c2; --ink: #17211d; --ink-2: #4b5651; --ink-3: #7b847f;
+  --court: #1f5a4a; --court-2: #2c7a64; --tape: #f2c94c; --tape-ink: #8a6200; --ours: #1f5a4a; --reused: #8c938f;
+  --code-bg: #e9e5d8; --monitor: #0b0f14;
+  --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f1512; --paper-2: #151d19; --rule: #26312c; --ink: #e5ebe7; --ink-2: #a8b4ad; --ink-3: #75817b;
+    --court: #6cc9a6; --court-2: #4fb08c; --tape: #f2c94c; --tape-ink: #f2c94c; --ours: #6cc9a6; --reused: #6f7a74;
+    --code-bg: #18211d; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f1512; --paper-2: #151d19; --rule: #26312c; --ink: #e5ebe7; --ink-2: #a8b4ad; --ink-3: #75817b;
+  --court: #6cc9a6; --court-2: #4fb08c; --tape: #f2c94c; --tape-ink: #f2c94c; --ours: #6cc9a6; --reused: #6f7a74;
+  --code-bg: #18211d; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.62 var(--body); }
+a { color: inherit; text-decoration-color: var(--tape); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+a:hover { text-decoration-color: currentColor; }
+:focus-visible { outline: 2px solid var(--tape); outline-offset: 3px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+
+/* masthead */
+.mast { padding-block: 56px 28px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px 48px; align-items: end; }
+.kicker { font: 500 12.5px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 14px; }
+h1 { font: 700 clamp(64px, 11vw, 148px)/0.82 var(--display); letter-spacing: -0.01em; text-transform: uppercase; margin: 0; }
+h1 .v { color: var(--court); }
+.claim { font-size: clamp(19px, 2.1vw, 23px); line-height: 1.42; max-width: 34ch; margin: 22px 0 0; text-wrap: balance; }
+.links { display: flex; flex-direction: column; gap: 8px; min-width: 210px; }
+.links a, .links span { display: flex; justify-content: space-between; gap: 18px; font: 500 14px var(--mono); padding: 11px 14px; border: 1px solid var(--rule); border-radius: 3px; text-decoration: none; background: var(--paper); }
+.links a:hover { border-color: var(--ink); }
+.links a b { font-weight: 500; color: var(--court); }
+.links span { color: var(--ink-3); border-style: dashed; }
+
+/* the monitor */
+.monitor { margin-top: 8px; }
+.screen { position: relative; background: var(--monitor); border-radius: 6px; overflow: hidden; height: min(78vh, 760px); min-height: 520px; box-shadow: 0 0 0 1px var(--rule); }
+.screen iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+.caption { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 24px; font-size: 14.5px; color: var(--ink-2); padding-top: 12px; }
+.caption .full { font: 500 13px var(--mono); white-space: nowrap; }
+.key { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+
+/* sections */
+section.part { border-top: 1px solid var(--rule); margin-top: 72px; padding-top: 22px; display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 12px 40px; }
+.part > .label { font: 500 12.5px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); padding-top: 9px; }
+.part > .label b { display: block; font: 600 34px/1 var(--display); color: var(--court); letter-spacing: 0; margin-bottom: 6px; }
+h2 { font: 600 clamp(32px, 4vw, 44px)/1.02 var(--display); text-transform: uppercase; letter-spacing: 0.005em; margin: 0 0 18px; text-wrap: balance; max-width: 22ch; }
+.prose { max-width: 66ch; }
+.prose p { margin: 0 0 14px; }
+.prose em { font-style: italic; }
+.pull { font: 600 clamp(26px, 3.2vw, 34px)/1.12 var(--display); text-transform: uppercase; border-left: 4px solid var(--tape); padding: 2px 0 2px 18px; margin: 4px 0 22px; max-width: 26ch; text-wrap: balance; }
+
+/* pipeline diagram */
+.fig { margin: 10px 0 0; }
+.fig .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+.fig svg { display: block; width: 100%; min-width: 860px; height: auto; font-family: var(--body); }
+.fig figcaption { font-size: 14px; color: var(--ink-2); margin-top: 10px; max-width: 70ch; }
+.legend { display: flex; flex-wrap: wrap; gap: 18px; font: 500 12.5px var(--mono); color: var(--ink-2); margin-top: 12px; }
+.legend i { display: inline-block; width: 22px; height: 12px; border-radius: 2px; vertical-align: -1px; margin-right: 7px; }
+svg .box-r { fill: none; stroke: var(--reused); stroke-width: 1.3; stroke-dasharray: 4 3; }
+svg .box-o { fill: var(--paper-2); stroke: var(--ours); stroke-width: 1.6; }
+svg .t { fill: var(--ink); font-size: 14.5px; font-weight: 600; }
+svg .s { fill: var(--ink-2); font-size: 12.5px; }
+svg .m { fill: var(--ink-3); font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; }
+svg .arr { stroke: var(--ink-2); stroke-width: 1.4; fill: none; }
+svg .head { fill: var(--ink-2); }
+svg .cell { fill: var(--court); fill-opacity: 0.16; }
+svg .cell.hot { fill-opacity: 0.5; }
+svg .ray { stroke: var(--court); stroke-width: 1.2; opacity: 0.8; }
+svg .floor { stroke: var(--ink-3); stroke-width: 1.2; }
+svg .tape { fill: var(--tape); }
+svg .flight { stroke: var(--court); stroke-width: 2; fill: none; }
+svg .hit { fill: var(--tape); stroke: var(--ink); stroke-width: 1; }
+
+/* the laws */
+ol.laws { list-style: none; padding: 0; margin: 4px 0 0; counter-reset: law; border-top: 1px solid var(--rule); max-width: 820px; }
+ol.laws li { counter-increment: law; display: grid; grid-template-columns: 92px minmax(0, 1fr) 96px; gap: 4px 20px; padding: 16px 0 17px; border-bottom: 1px solid var(--rule); }
+ol.laws li::before { content: "Law " counter(law); font: 600 21px/1.25 var(--display); text-transform: uppercase; color: var(--court); }
+ol.laws h3 { font: 600 17px/1.35 var(--body); margin: 0 0 3px; }
+ol.laws p { margin: 0; color: var(--ink-2); font-size: 15.5px; }
+.how { font: 500 11.5px/1.35 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; padding-top: 4px; text-align: right; color: var(--ink-3); }
+.how.hard { color: var(--court); }
+
+/* two columns: learns from / judged by */
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 44px; max-width: 900px; }
+.cols h3 { font: 500 12.5px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 10px; padding-bottom: 8px; border-bottom: 2px solid var(--ink); }
+.cols ul { list-style: none; margin: 0; padding: 0; }
+.cols li { padding: 9px 0; border-bottom: 1px solid var(--rule); font-size: 15.5px; }
+.cols li b { font-weight: 600; }
+.cols li span { color: var(--ink-2); }
+.note { font-size: 14.5px; color: var(--ink-2); margin-top: 18px; max-width: 70ch; }
+
+/* credits */
+.credits { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 0 32px; max-width: 900px; }
+.credits div { padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.credits b { display: block; font-weight: 600; }
+.credits span { font-size: 14.5px; color: var(--ink-2); }
+.credits .own b::after { content: "same authors"; font: 500 10.5px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--tape-ink); margin-left: 8px; }
+
+pre { background: var(--code-bg); border-radius: 4px; padding: 16px 18px; overflow-x: auto; font: 13.5px/1.6 var(--mono); margin: 0; max-width: 820px; }
+pre .c { color: var(--ink-3); }
+footer { margin-top: 88px; border-top: 1px solid var(--rule); padding-block: 22px 40px; font: 13px var(--mono); color: var(--ink-3); display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; }
+
+@media (max-width: 860px) {
+  .mast { grid-template-columns: minmax(0, 1fr); padding-block: 36px 20px; }
+  .links { flex-direction: row; flex-wrap: wrap; min-width: 0; }
+  .links a, .links span { flex: 1 1 180px; }
+  section.part { grid-template-columns: minmax(0, 1fr); margin-top: 56px; }
+  .part > .label b { display: inline; font-size: 24px; margin-right: 10px; }
+  .screen { height: auto; min-height: 0; aspect-ratio: auto; }
+  .screen iframe { position: static; height: 1180px; }
+  .caption { grid-template-columns: minmax(0, 1fr); }
+  ol.laws li { grid-template-columns: minmax(0, 1fr); }
+  .how { text-align: left; }
+  .cols { grid-template-columns: minmax(0, 1fr); }
+}
+</style>
+</head>
+<body>
+<!-- Authors are left off while the paper is under double-blind review. -->
+<div class="wrap">
+
+<header class="mast">
+  <div>
+    <p class="kicker">Badminton · monocular 3D · research code</p>
+    <h1>Birdseye <span class="v">v2</span></h1>
+    <p class="claim">A whole rally in 3D from one camera: players, rackets, the shuttle and every hit, from a small model that may only move things the way physics allows.</p>
+  </div>
+  <nav class="links" aria-label="Project links">
+    <a href="https://github.com/CiroZhang/Birdseye-v2">Code <b>GitHub →</b></a>
+    <a href="viewer/">Viewer <b>full screen →</b></a>
+    <span>Paper <em>under review</em></span>
+  </nav>
+</header>
+
+<div class="monitor">
+  <div class="screen">
+    <iframe src="viewer/" title="Interactive 3D rally viewer" loading="lazy" allow="fullscreen"></iframe>
+  </div>
+  <div class="caption">
+    <div>
+      Drag to orbit, press space to play. These drone rallies come from matches the model never trained on.
+      <span class="key"><span class="dot" style="background:#4fb3ff"></span>near player</span>
+      <span class="key"><span class="dot" style="background:#ff7a6b"></span>far player</span>
+      <span class="key"><span class="dot" style="background:#f2c94c"></span>our shuttle</span>
+      <span class="key"><span class="dot" style="background:#f4f4f4;box-shadow:0 0 0 1px var(--rule)"></span>ground truth from a second drone the model never sees</span>
+    </div>
+    <a class="full" href="viewer/">Open full screen ↗</a>
+  </div>
+</div>
+
+<section class="part" id="idea">
+  <div class="label"><b>01</b>The idea</div>
+  <div class="prose">
+    <h2>Gravity is the only free force</h2>
+    <p class="pull">Everything falls. Anything else needs a contact.</p>
+    <p>One camera cannot tell how far away something is. A rally can. Gravity is known, so the shape of the shuttle's arc over time fixes its distance in metres. Each hit then hands that distance to the hitter's racket head, the racket to the wrist, and the wrist through fixed-length bones to the whole body. The shuttle measures the players, and the players explain the shuttle.</p>
+    <p>So we don't regress 3D points. One small network reads the whole rally and sets the controls of a physical model: joint angles for a skeleton whose bones cannot stretch, a grip angle for a rigid racket, and the moments when someone hits. Physics fills in everything between those moments.</p>
+  </div>
+</section>
+
+<section class="part" id="method">
+  <div class="label"><b>02</b>Method</div>
+  <div>
+    <h2>Four detectors in, one rally out</h2>
+    <figure class="fig">
+      <div class="scroll">
+      <svg viewBox="0 0 1040 400" role="img" aria-labelledby="figt figd">
+        <title id="figt">Pipeline</title>
+        <desc id="figd">Four reused 2D detectors become camera rays in court coordinates. A transformer that alternates attention across time and across entities drives a skeleton, a racket and hit events, and the shuttle flies under gravity and drag between hits.</desc>
+        <defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="head"/></marker></defs>
+
+        <text x="10" y="22" class="m">REUSED · 2D ONLY</text>
+        <g>
+          <rect x="10" y="38" width="196" height="64" rx="3" class="box-r"/><text x="24" y="64" class="t">Court and camera</text><text x="24" y="85" class="s">BirdsCourt</text>
+          <rect x="10" y="114" width="196" height="64" rx="3" class="box-r"/><text x="24" y="140" class="t">Shuttle, 2D</text><text x="24" y="161" class="s">TrackNetV3</text>
+          <rect x="10" y="190" width="196" height="64" rx="3" class="box-r"/><text x="24" y="216" class="t">Player keypoints</text><text x="24" y="237" class="s">YOLOv8-pose</text>
+          <rect x="10" y="266" width="196" height="64" rx="3" class="box-r"/><text x="24" y="292" class="t">Racket boxes</text><text x="24" y="313" class="s">YOLOv8</text>
+        </g>
+        <path d="M206 70 C 236 70 236 184 262 184" class="arr"/><path d="M206 146 C 236 146 236 184 262 184" class="arr"/>
+        <path d="M206 222 C 236 222 236 184 262 184" class="arr"/><path d="M206 298 C 236 298 236 184 262 184" class="arr" marker-end="url(#ah)"/>
+
+        <text x="270" y="22" class="m">OURS</text>
+        <rect x="270" y="94" width="176" height="186" rx="3" class="box-o"/>
+        <circle cx="300" cy="140" r="5" class="tape"/>
+        <line x1="300" y1="140" x2="420" y2="218" class="ray"/><line x1="300" y1="140" x2="396" y2="226" class="ray"/>
+        <line x1="300" y1="140" x2="430" y2="182" class="ray"/><line x1="300" y1="140" x2="372" y2="230" class="ray"/>
+        <line x1="286" y1="232" x2="432" y2="232" class="floor"/>
+        <text x="284" y="122" class="t">Rays</text>
+        <text x="284" y="252" class="s">in court metres; no pixels,</text><text x="284" y="266" class="s" dy="0">no camera type</text>
+        <path d="M446 184 L 484 184" class="arr" marker-end="url(#ah)"/>
+
+        <rect x="490" y="62" width="226" height="244" rx="3" class="box-o"/>
+        <text x="504" y="86" class="t">Time × entity transformer</text>
+        <text x="504" y="104" class="s">6.6 M parameters, whole rally</text>
+        <g transform="translate(528 122)">
+          <rect x="0" y="0" width="16" height="16" class="cell"/><rect x="20" y="0" width="16" height="16" class="cell"/><rect x="40" y="0" width="16" height="16" class="cell"/><rect x="60" y="0" width="16" height="16" class="cell"/><rect x="80" y="0" width="16" height="16" class="cell"/><rect x="100" y="0" width="16" height="16" class="cell"/><rect x="120" y="0" width="16" height="16" class="cell"/><rect x="140" y="0" width="16" height="16" class="cell"/>
+          <rect x="0" y="20" width="16" height="16" class="cell"/><rect x="20" y="20" width="16" height="16" class="cell"/><rect x="40" y="20" width="16" height="16" class="cell"/><rect x="60" y="20" width="16" height="16" class="cell"/><rect x="80" y="20" width="16" height="16" class="cell"/><rect x="100" y="20" width="16" height="16" class="cell"/><rect x="120" y="20" width="16" height="16" class="cell"/><rect x="140" y="20" width="16" height="16" class="cell"/>
+          <rect x="0" y="40" width="16" height="16" class="cell"/><rect x="20" y="40" width="16" height="16" class="cell"/><rect x="40" y="40" width="16" height="16" class="cell"/><rect x="60" y="40" width="16" height="16" class="cell"/><rect x="80" y="40" width="16" height="16" class="cell"/><rect x="100" y="40" width="16" height="16" class="cell"/><rect x="120" y="40" width="16" height="16" class="cell"/><rect x="140" y="40" width="16" height="16" class="cell"/>
+          <rect x="0" y="60" width="16" height="16" class="cell"/><rect x="20" y="60" width="16" height="16" class="cell"/><rect x="40" y="60" width="16" height="16" class="cell"/><rect x="60" y="60" width="16" height="16" class="cell"/><rect x="80" y="60" width="16" height="16" class="cell"/><rect x="100" y="60" width="16" height="16" class="cell"/><rect x="120" y="60" width="16" height="16" class="cell"/><rect x="140" y="60" width="16" height="16" class="cell"/>
+          <rect x="0" y="80" width="16" height="16" class="cell"/><rect x="20" y="80" width="16" height="16" class="cell"/><rect x="40" y="80" width="16" height="16" class="cell"/><rect x="60" y="80" width="16" height="16" class="cell"/><rect x="80" y="80" width="16" height="16" class="cell"/><rect x="100" y="80" width="16" height="16" class="cell"/><rect x="120" y="80" width="16" height="16" class="cell"/><rect x="140" y="80" width="16" height="16" class="cell"/>
+          <rect x="60" y="0" width="16" height="96" class="cell hot"/>
+          <rect x="0" y="40" width="156" height="16" class="cell hot"/>
+          <text x="-20" y="12" class="m">P1</text><text x="-20" y="32" class="m">P2</text><text x="-20" y="52" class="m">P3</text><text x="-20" y="72" class="m">P4</text><text x="-20" y="92" class="m">SH</text>
+        </g>
+        <text x="504" y="246" class="s">attention alternates: along a row</text>
+        <text x="504" y="262" class="s">(one player over time) and down a</text>
+        <text x="504" y="278" class="s">column (everyone in one frame)</text>
+        <path d="M716 184 L 754 184" class="arr" marker-end="url(#ah)"/>
+
+        <text x="760" y="22" class="m">PHYSICAL MODEL</text>
+        <rect x="760" y="38" width="270" height="64" rx="3" class="box-o"/><text x="774" y="64" class="t">Skeleton</text><text x="774" y="85" class="s">joint angles → fixed-length bones</text>
+        <rect x="760" y="114" width="270" height="64" rx="3" class="box-o"/><text x="774" y="140" class="t">Racket</text><text x="774" y="161" class="s">rigid, set in the forearm's frame</text>
+        <rect x="760" y="190" width="270" height="64" rx="3" class="box-o"/><text x="774" y="216" class="t">Hits</text><text x="774" y="237" class="s">who hits, and when</text>
+        <path d="M895 254 L 895 274" class="arr" marker-end="url(#ah)"/>
+        <rect x="760" y="280" width="270" height="108" rx="3" class="box-o"/><text x="774" y="304" class="t">Shuttle</text><text x="774" y="323" class="s">free flight between hits</text>
+        <path d="M790 376 Q 845 318 900 360" class="flight"/><path d="M900 360 Q 955 312 1012 374" class="flight"/>
+        <circle cx="790" cy="376" r="4.5" class="hit"/><circle cx="900" cy="360" r="4.5" class="hit"/>
+      </svg>
+      </div>
+      <div class="legend"><span><i style="border:1.3px dashed var(--reused)"></i>reused off the shelf</span><span><i style="background:var(--paper-2);border:1.6px solid var(--ours)"></i>this work</span></div>
+      <figcaption>Only the four 2D detectors are borrowed. Everything from rays to 3D is learned together, and the camera can sit anywhere: back, side, broadcast or drone all become rays.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="part" id="laws">
+  <div class="label"><b>03</b>Laws of the model</div>
+  <div>
+    <h2>What the model is not allowed to do</h2>
+    <p class="prose" style="margin:0 0 16px">Some rules are built into the model's shape, so no output can break them. The rest are terms of one training objective, which the network learns to satisfy across thousands of rallies. Nothing is tuned per rally at test time.</p>
+    <ol class="laws">
+      <li><div><h3>A player's bones keep their length.</h3><p>The network outputs joint angles. Forward kinematics turns them into joints, so arms cannot stretch and shins cannot shrink.</p></div><div class="how hard">structure</div></li>
+      <li><div><h3>Nobody floats.</h3><p>A body is held up only while a foot is on the floor. In the air the pelvis must fall at g, and the floor cannot be passed through.</p></div><div class="how">objective</div></li>
+      <li><div><h3>A racket is rigid and stays in one hand.</h3><p>It is set by an angle in the forearm's own frame, so it moves with the wrist. Which hand holds it is learned once per player for the rally.</p></div><div class="how hard">structure</div></li>
+      <li><div><h3>A racket only claims what its hand can reach.</h3><p>A racket detection counts for a hand only if it lies within reach of that hand's detected wrist, so an arm is never pulled onto another player's racket.</p></div><div class="how">objective</div></li>
+      <li><div><h3>Between hits, the shuttle flies freely.</h3><p>Gravity and quadratic air drag only, with a terminal speed of 6.4 m/s measured from two-view flights. Consecutive flights share their endpoints.</p></div><div class="how hard">structure</div></li>
+      <li><div><h3>A hit happens at the hitter's racket.</h3><p>At the moment of a hit, the shuttle must be at the racket head of the player who struck it. This is how the shuttle's depth reaches the body.</p></div><div class="how">objective</div></li>
+      <li><div><h3>What is seen must lie on its ray.</h3><p>Every joint, racket head and shuttle must project onto its detection, with robust losses so a wrong detection cannot pull hard.</p></div><div class="how">objective</div></li>
+    </ol>
+  </div>
+</section>
+
+<section class="part" id="data">
+  <div class="label"><b>04</b>Data</div>
+  <div>
+    <h2>Trained on broadcast, judged from above</h2>
+    <div class="cols">
+      <div>
+        <h3>Learns from</h3>
+        <ul>
+          <li><b>Broadcast rallies</b> <span>(BFMD, FineBadminton): no 3D labels at all, only the laws above.</span></li>
+          <li><b>Hit labels</b> <span>where a dataset has them: who hit and when.</span></li>
+          <li><b>Two-drone poses</b> <span>triangulated on separate DroneData matches, plus a small pose prior learned from them.</span></li>
+          <li><b>VIMO bone directions</b> <span>during training only, and only where VIMO agrees with the 2D keypoints. It settles whether a forearm points toward or away from the camera.</span></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Judged by</h3>
+        <ul>
+          <li><b>3D error on held-out drone matches.</b> <span>The model sees the back drone; the top drone gives the ground truth.</span></li>
+          <li><b>Player position</b> <span>against players annotated in the top view.</span></li>
+          <li><b>Hits recovered</b> <span>against labelled hits.</span></li>
+          <li><b>Stroke recognition on BFMD.</b> <span>A stroke classifier trained on our 3D output, as a test of how much the representation holds.</span></li>
+        </ul>
+      </div>
+    </div>
+    <p class="note">At run time the model needs only the four detectors: no VIMO, no SMPL and no second camera.</p>
+  </div>
+</section>
+
+<section class="part" id="credits">
+  <div class="label"><b>05</b>Built on</div>
+  <div>
+    <h2>Detectors and data we borrow</h2>
+    <div class="credits">
+      <div class="own"><b><a href="https://github.com/CiroZhang/BirdsCourt">BirdsCourt</a></b><span>court lines, net and camera from a single image</span></div>
+      <div class="own"><b><a href="https://github.com/CiroZhang/Birdseye">Birdseye</a></b><span>the first version, and the BFMD stroke benchmark protocol</span></div>
+      <div><b><a href="https://github.com/qaz812345/TrackNetV3">TrackNetV3</a></b><span>2D shuttle tracking</span></div>
+      <div><b><a href="https://github.com/ultralytics/ultralytics">YOLOv8</a></b><span>person keypoints and racket boxes</span></div>
+      <div><b><a href="https://github.com/yufu-wang/tram">TRAM / VIMO</a></b><span>training-time teacher for bone directions only</span></div>
+      <div><b><a href="https://github.com/Ning-D/Drone_BD_ControlArea">DroneData</a></b><span>top and back drone views of doubles, used for evaluation</span></div>
+      <div><b>BFMD</b><span>broadcast singles with hit and stroke labels</span></div>
+      <div><b>FineBadminton</b><span>broadcast rallies with hit annotations</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="part" id="code">
+  <div class="label"><b>06</b>Code</div>
+  <div>
+    <h2>Run it</h2>
+<pre><span class="c"># 2D detections for a DroneData match (back view only)</span>
+python tools/drone_birdscourt.py BD15
+python tools/run_tracknet.py BD15 &amp;&amp; python tools/run_pose.py BD15 &amp;&amp; python tools/run_racket.py BD15
+
+<span class="c"># detections -> rays, then train and evaluate</span>
+python tools/build_obs.py drone
+TAG=p11 python tools/train_rallynet.py train
+
+<span class="c"># rebuild this page's viewer data</span>
+TAG=p11 VIEWER_OUT=../docs/viewer python tools/export_rallynet_viewer.py BD15/Rally-39 ...</pre>
+    <p class="note">Setup, data layout and every stage are in the <a href="https://github.com/CiroZhang/Birdseye-v2#readme">README</a>.</p>
+  </div>
+</section>
+
+<footer>
+  <span>Birdseye v2</span>
+  <span>VIMO and SMPL are used at training time only, under their own licences.</span>
+</footer>
+</div>
+</body>
+</html>
