@@ -6,15 +6,15 @@
 /* Layout: 3D scene (left, large) beside the synced TV + side video (right, stacked); confidence timeline under both. */
 :root {
   --bg: #f2f4f1; --panel: #ffffff; --fg: #16201b; --muted: #5b6861; --rule: #d5dcd6; --chip: #e5ebe6;
-  --label: #c99a00; --unsure: #8d958f; --hit: #d33a2c; --tv: #2a78d6; --side: #e0702f; --stu: #0f9fb0; --good: #2f9e55; --mid: #d9a21b; --bad: #d33a2c;
+  --label: #2f6fd6; --unsure: #8d958f; --hit: #d33a2c; --tv: #9b59d0; --side: #e0702f; --stu: #b88a00; --good: #2f9e55; --mid: #d9a21b; --bad: #d33a2c;
   --display: "Archivo", "Helvetica Neue", Arial, sans-serif; --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; --mono: "IBM Plex Mono", Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0f1512; --panel: #172019; --fg: #e4ebe6; --muted: #97a59c; --rule: #29342d; --chip: #212b25;
-  --label: #f2c200; --unsure: #8d958f; --hit: #f0645a; --tv: #5aa0f0; --side: #f08a4b; --stu: #28dceb; --good: #4cc276; --mid: #f0c040; --bad: #f0645a; color-scheme: dark } }
+  --label: #5a9cff; --unsure: #8d958f; --hit: #f0645a; --tv: #c77dff; --side: #f08a4b; --stu: #f2c200; --good: #4cc276; --mid: #f0c040; --bad: #f0645a; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #0f1512; --panel: #172019; --fg: #e4ebe6; --muted: #97a59c; --rule: #29342d; --chip: #212b25;
-  --label: #f2c200; --unsure: #8d958f; --hit: #f0645a; --tv: #5aa0f0; --side: #f08a4b; --stu: #28dceb; --good: #4cc276; --mid: #f0c040; --bad: #f0645a; color-scheme: dark }
+  --label: #5a9cff; --unsure: #8d958f; --hit: #f0645a; --tv: #c77dff; --side: #f08a4b; --stu: #f2c200; --good: #4cc276; --mid: #f0c040; --bad: #f0645a; color-scheme: dark }
 body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--body); }
 .wrap { max-width: 1400px; margin: 0 auto; padding-block: 24px 48px;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 16px; }
@@ -33,12 +33,12 @@ button:focus-visible { outline: 2px solid var(--tv); outline-offset: 2px; }
 @media (max-width: 860px) { .viewer { grid-template-columns: 1fr; } }
 .pane { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; min-width: 0; display: grid; }
 #three { position: relative; width: 100%; aspect-ratio: 16/11; max-width: 100%; background: #0f1412; touch-action: none; }
-#three canvas { display: block; }
+#three canvas { display: block; position: absolute; inset: 0; width: 100% !important; height: 100% !important; }
 .views { padding: 10px; border-top: 1px solid var(--rule); }
 video { width: 100%; max-width: 100%; aspect-ratio: 1280/720; background: #000; display: block; }
 .readout { padding: 10px 12px; font: 13px/1.7 var(--mono); border-top: 1px solid var(--rule); min-height: 4.6em; }
 .pill { display: inline-block; padding: 1px 7px; border-radius: 4px; font-weight: 600; }
-.pill.lab { background: var(--label); color: #1a1600; } .pill.uns { background: var(--chip); color: var(--muted); }
+.pill.lab { background: var(--label); color: #ffffff; } .pill.uns { background: var(--chip); color: var(--muted); }
 .tl { padding: 10px 12px 12px; display: grid; gap: 6px; }
 .tl .cap { font: 12px var(--mono); color: var(--muted); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 #tl { width: 100%; height: 78px; display: block; cursor: pointer; touch-action: none; }
@@ -50,7 +50,7 @@ video { width: 100%; max-width: 100%; aspect-ratio: 1280/720; background: #000; 
 
 <div class="wrap">
   <h1>Teacher and student, in 3D</h1>
-  <p><b>Teacher</b> (yellow shuttle, solid bodies, orange rackets): fitted from all four cameras: TV, the fixed side camera and both player cameras. It labels only what it is sure of: yellow frames are labels, grey ones are left out. <b>Student</b> (cyan shuttle, cyan stick figures and rackets): one network that sees <i>only the TV feed</i>, trained to reproduce the teacher. These rallies were kept out of the student's training, so it has never seen their labels. Play or scrub the video, or click the timeline, and the 3D scene follows. Drag to orbit, scroll to zoom.</p>
+  <p><b>Student</b> (gold shuttle, solid bodies, orange rackets): one network that sees <i>only the TV feed</i>, trained to reproduce the teacher. <b>Teacher</b> (everything in blue): fitted from all four cameras: TV, the fixed side camera and both player cameras. It labels only what it is sure of: bright blue frames are labels, grey-blue ones are left out. These rallies were kept out of the student's training, so it has never seen their labels. Play or scrub the video, or click the timeline, and the 3D scene follows. Drag to orbit, scroll to zoom.</p>
   <div class="picker"><button id="rprev" aria-label="previous rally">←</button><select id="rsel" aria-label="rally"></select><button id="rnext" aria-label="next rally">→</button><span id="rcount"></span></div>
   <div class="viewer">
     <div class="pane">
@@ -65,13 +65,13 @@ video { width: 100%; max-width: 100%; aspect-ratio: 1280/720; background: #000; 
     </div>
   </div>
   <div class="pane tl">
-    <div class="cap"><span>top: teacher (yellow = labelled, grey = unsure; red ticks = sure hits, grey ticks = hits it abstains on) · bottom: student (distance to the teacher on labelled frames: green &lt; 25 cm, amber &lt; 60 cm, red beyond; cyan ticks = student hits)</span><span id="tlstat"></span></div>
+    <div class="cap"><span>top: teacher (blue = labelled, grey = unsure; red ticks = sure hits, grey ticks = hits it abstains on) · bottom: student (distance to the teacher on labelled frames: green &lt; 25 cm, amber &lt; 60 cm, red beyond; gold ticks = student hits)</span><span id="tlstat"></span></div>
     <canvas id="tl"></canvas>
   </div>
   <div class="legend">
     <span><i class="d" style="background:var(--label)"></i>teacher shuttle, labelled</span><span><i class="d" style="background:var(--unsure)"></i>teacher shuttle, unsure (not a label)</span>
-    <span><i class="d" style="background:var(--stu)"></i>student shuttle (TV only)</span><span><i style="background:var(--stu)"></i>student players and rackets</span>
-    <span><i style="background:#ff5a10"></i>teacher racket (darker = more cameras see it, white = hitting the shuttle)</span><span><i style="background:#3fd0b0"></i>teacher, far side players</span><span><i style="background:#b59cff"></i>teacher, near side players</span>
+    <span><i class="d" style="background:var(--stu)"></i>student shuttle (TV only)</span><span><i style="background:#ff6f61"></i>student, near side players</span><span><i style="background:#ffc23d"></i>student, far side players</span><span><i style="background:#ff8c28"></i>student rackets</span>
+    <span><i style="background:var(--label)"></i>teacher players and rackets</span>
     <span><i style="background:var(--tv)"></i>TV camera ray (when it detects the shuttle)</span><span><i style="background:var(--side)"></i>side camera ray</span>
   </div>
   <p>Teacher players are VIMO (TRAM) 3D bodies placed on court by all four cameras, with rackets fitted to the racket boxes seen in every camera; the teacher's shuttle is a physical flight per shot (drag and gravity) through every camera's detections, with hits checked by a video hit model. The student predicts all of this from the TV feed alone, frame by frame, in a single network pass, with no per-rally fitting.</p>
@@ -86,7 +86,7 @@ const R = [{"uid": "sf_0541", "secs": 14.0, "players": 2, "med_cm": 15.6, "body"
   const P = (x, y, z) => new THREE.Vector3(x, z, -y);
   const PARENT = [-1, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 12, 13, 14, 16, 17, 18, 19, 20, 21];  // SMPL 24 joints
   const EDGES = PARENT.map((p, j) => [p, j]).filter(e => e[0] >= 0), WRISTS = [20, 21], HEAD = 15;
-  const YEL = new THREE.Color(0xf2c200), GRY = new THREE.Color(0x7d857f);
+  const YEL = new THREE.Color(0x4f8ff7), GRY = new THREE.Color(0x5d6b80), TB = 0x4f8ff7;  // teacher: blue (labelled) / grey-blue (unsure)
   const box = document.getElementById("three");
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1)); box.prepend(renderer.domElement);
@@ -115,7 +115,7 @@ const R = [{"uid": "sf_0541", "secs": 14.0, "players": 2, "med_cm": 15.6, "body"
   for (let z = 1; z <= 6; z++) { const s = label(z + " m", "#6f7f77"); s.position.copy(P(-1.6, L + 0.6, z)); s.scale.set(1.6, 0.4, 1); scene.add(s); }
 
   const camMarks = {}, rays = {};
-  for (const [k, col, txt] of [["tv", 0x5aa0f0, "TV camera"], ["side", 0xf08a4b, "side camera"], ["p1", 0xd986ff, "player cam 1"], ["p2", 0x5fd0c0, "player cam 2"]]) {
+  for (const [k, col, txt] of [["tv", 0xc77dff, "TV camera"], ["side", 0xf08a4b, "side camera"], ["p1", 0xff7ab8, "player cam 1"], ["p2", 0x5fd0c0, "player cam 2"]]) {
     camMarks[k] = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.35, 0.35), new THREE.MeshBasicMaterial({ color: col })); scene.add(camMarks[k]);
     const s = label(txt, "#" + col.toString(16)); camMarks[k].userData.label = s; scene.add(s);
     rays[k] = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.8 })); scene.add(rays[k]);
@@ -139,7 +139,7 @@ const R = [{"uid": "sf_0541", "secs": 14.0, "players": 2, "med_cm": 15.6, "body"
   const bones = [], heads = [], shafts = [], rings = [];
   const RK_SHAFT = 0.435, RK_HEAD_H = 0.23, RK_HEAD_W = 0.2, RK_BUTT = 0.07;  // the hand holds the grip 7 cm from its end
   const RK_COL = [0xffd2a8, 0xff8c28, 0xff5a10, 0xffffff];  // racket: no camera sees it, one camera, two or more, at a hit (head on the shuttle)
-  const TEAM = [[0xb59cff, 0xd9c9ff], [0x3fd0b0, 0x9be8d6]];  // near side, far side (two shades for partners)
+  const TEAM = [[0xff6f61, 0xffa79e], [0xffc23d, 0xffe08f]];  // near side, far side (two shades for partners)
   // solid bodies: a shaded tube per SMPL bone (radius by body part) and a ball at every joint so the tubes join smoothly
   scene.add(new THREE.HemisphereLight(0xffffff, 0x334038, 0.75));
   const sun = new THREE.DirectionalLight(0xffffff, 0.55); sun.position.set(4, 10, 6); scene.add(sun);
@@ -174,18 +174,18 @@ const R = [{"uid": "sf_0541", "secs": 14.0, "players": 2, "med_cm": 15.6, "body"
     rg.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z)); rg.position.copy(w);
   }
 
-  // student: cyan shuttle + trail, 17-joint stick figures, thin rackets
-  const STU = 0x28dceb, COCO = [[0,1],[0,2],[1,3],[2,4],[5,6],[5,7],[7,9],[6,8],[8,10],[5,11],[6,12],[11,12],[11,13],[13,15],[12,14],[14,16]];
+  // student shuttle (gold) + trail; thin blue stick figures and rackets: the teacher
+  const STU = 0xf2c200, COCO = [[0,1],[0,2],[1,3],[2,4],[5,6],[5,7],[7,9],[6,8],[8,10],[5,11],[6,12],[11,12],[11,13],[13,15],[12,14],[14,16]];
   const sBall = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 12), new THREE.MeshBasicMaterial({ color: STU })); scene.add(sBall);
   const sDrop = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: STU, transparent: true, opacity: 0.45 })); scene.add(sDrop);
   const sTrail = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: STU })); scene.add(sTrail);
-  const tTrail = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xf2c200 })); scene.add(tTrail);
-  const sMat = new THREE.MeshBasicMaterial({ color: STU, transparent: true, opacity: 0.8 });
+  const tTrail = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: TB })); scene.add(tTrail);
+  const sMat = new THREE.MeshBasicMaterial({ color: TB, transparent: true, opacity: 0.85 });  // thin bodies: the teacher
   const sBody = [0, 1, 2, 3].map(() => {
     const g = new THREE.Group();
     g.userData.tubes = PARENT.map(() => { const m = new THREE.Mesh(TUBE, sMat); g.add(m); return m; });
     g.userData.head = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 8), sMat); g.add(g.userData.head);
-    g.userData.rkm = racketGroup(STU);
+    g.userData.rkm = racketGroup(TB);
     scene.add(g); return g;
   });
   function tube(m, a, b, r) {
@@ -277,8 +277,9 @@ const R = [{"uid": "sf_0541", "secs": 14.0, "players": 2, "med_cm": 15.6, "body"
       });
       drop.geometry.setFromPoints([p, P(X[1], X[2], 0.004)]); shadow.position.copy(P(X[1], X[2], 0.004));
     }
+    const SP = D.student.players;
     for (let i = 0; i < 4; i++) {
-      const pl = D.players[i], J = pl && pl.frames[k]; bones[i].visible = heads[i].visible = !!J; if (!J) continue;
+      const pl = SP[i], J = pl && pl.frames[k]; bones[i].visible = heads[i].visible = !!J; if (!J) continue;
       const { tubes, balls } = bones[i].userData;
       EDGES.forEach(([u, w], e) => {
         const m = tubes[e]; m.visible = !!(J[u] && J[w]); if (!m.visible) return;
@@ -289,36 +290,30 @@ const R = [{"uid": "sf_0541", "secs": 14.0, "players": 2, "med_cm": 15.6, "body"
       balls.forEach((m, j) => { m.visible = jointR[j] > 0 && !!J[j]; if (m.visible) m.position.copy(P(...J[j])); });
       const hd = J[HEAD]; heads[i].visible = !!hd; if (hd) heads[i].position.copy(P(...hd));
     }
-    for (let i = 0; i < 4; i++) {
-      const pl = D.players[i], J = pl && pl.frames[k], rk = pl && pl.rk && pl.rk[k];
-      rings[i].visible = showRk && !!(J && rk && (rk.grip || J[pl.hand])); if (!rings[i].visible) continue;
-      const col = RK_COL[rk.src] ?? 0xff8c28;
-      rings[i].userData.mats[0].color.setHex(col); rings[i].userData.mats[1].color.setHex(col);
-      // grip at the racket hand, pointing along the (gap-filled, smoothed) direction to the detected racket head
-      const y = P(...rk.dir).normalize(), w = rk.grip ? P(...rk.grip).sub(y.clone().multiplyScalar(RK_BUTT)) : P(...J[pl.hand]);
-      let z = cam.position.clone().sub(w); z.sub(y.clone().multiplyScalar(z.dot(y))).normalize();
-      const x = new THREE.Vector3().crossVectors(y, z);
-      rings[i].quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z)); rings[i].position.copy(w);
+    for (let i = 0; i < 4; i++) {  // student rackets: grip + direction per frame, orange
+      const pl = SP[i], J = pl && pl.frames[k], rk = J && pl.rk && pl.rk[k];
+      rings[i].visible = showRk && !!rk; if (!rings[i].visible) continue;
+      rings[i].userData.mats[0].color.setHex(0xff8c28); rings[i].userData.mats[1].color.setHex(0xff8c28);
+      placeRacket(rings[i], P(rk[0], rk[1], rk[2]), P(rk[3], rk[4], rk[5]));
     }
     // teacher on/off
     ball.visible = ball.visible && showT; drop.visible = drop.visible && showT; shadow.visible = shadow.visible && showT;
     for (const r of ["tv", "side"]) rays[r].visible = rays[r].visible && showT;
-    for (let i = 0; i < 4; i++) { bones[i].visible = bones[i].visible && showT; heads[i].visible = heads[i].visible && showT; rings[i].visible = rings[i].visible && showT; }
+    for (let i = 0; i < 4; i++) { bones[i].visible = bones[i].visible && showS; heads[i].visible = heads[i].visible && showS; rings[i].visible = rings[i].visible && showS; }
     const trailPts = (get, n) => { const pts = []; for (let q = k - n; q <= k; q++) { const r = get(q); if (r) pts.push(P(r[1], r[2], r[3])); } return pts; };
     tTrail.visible = showT; if (showT) tTrail.geometry.setFromPoints(trailPts(q => byF[q], 12));
     // student
     const Sx = sByF[k];
     sBall.visible = sDrop.visible = sTrail.visible = showS && !!Sx;
     if (sBall.visible) { const p = P(Sx[1], Sx[2], Sx[3]); sBall.position.copy(p); sDrop.geometry.setFromPoints([p, P(Sx[1], Sx[2], 0.004)]); sTrail.geometry.setFromPoints(trailPts(q => sByF[q], 12)); }
-    const SP = D.student.players;
-    for (let i = 0; i < 4; i++) {
-      const pl = SP[i], J = showS && pl && pl.frames[k], g = sBody[i]; g.visible = !!J;
-      const rk = J && pl.rk && pl.rk[k]; g.userData.rkm.visible = showRk && !!rk;
+    for (let i = 0; i < 4; i++) {  // teacher: thin blue SMPL stick figures and rackets
+      const pl = D.players[i], J = showT && pl && pl.frames[k], g = sBody[i]; g.visible = !!J;
+      const rk = J && pl.rk && pl.rk[k], grip = rk && (rk.grip ? P(...rk.grip) : (J[pl.hand] ? P(...J[pl.hand]) : null));
+      g.userData.rkm.visible = showRk && !!grip;
       if (!J) continue;
-      const EDG = pl.smpl ? PARENT.map((p, j) => [p, j]).filter(e => e[0] >= 0) : COCO;
-      g.userData.tubes.forEach((m, e) => { if (e < EDG.length) tube(m, P(...J[EDG[e][0]]), P(...J[EDG[e][1]]), 0.022); else m.visible = false; });
-      g.userData.head.position.copy(P(...J[pl.smpl ? 15 : 0]));
-      if (rk) placeRacket(g.userData.rkm, P(rk[0], rk[1], rk[2]), P(rk[3], rk[4], rk[5]));
+      g.userData.tubes.forEach((m, e) => { if (e < EDGES.length && J[EDGES[e][0]] && J[EDGES[e][1]]) tube(m, P(...J[EDGES[e][0]]), P(...J[EDGES[e][1]]), 0.022); else m.visible = false; });
+      g.userData.head.visible = !!J[15]; if (J[15]) g.userData.head.position.copy(P(...J[15]));
+      if (grip) placeRacket(g.userData.rkm, grip, P(...rk.dir));
     }
     const dk = D.student.dist[k];
     const stuTxt = Sx ? `<br><span style="color:var(--stu)">●</span> student (TV only): x ${Sx[1].toFixed(2)} · y ${Sx[2].toFixed(2)} · height ${Sx[3].toFixed(2)} m`
@@ -365,8 +360,8 @@ const R = [{"uid": "sf_0541", "secs": 14.0, "players": 2, "med_cm": 15.6, "body"
     sByF = {}; for (const row of D.student.path) sByF[row[0]] = row;
     D.players.forEach(racketTrack);
     const seen = [0, 0];
-    D.players.forEach((pl, i) => { const c = TEAM[pl.side][seen[pl.side]++ % 2]; bones[i].material.color.setHex(c); });
-    for (let i = D.players.length; i < 4; i++) bones[i].visible = heads[i].visible = rings[i].visible = false;
+    D.student.players.forEach((pl, i) => { if (i < 4) { const c = TEAM[pl.side][seen[pl.side]++ % 2]; bones[i].material.color.setHex(c); } });
+    for (let i = D.student.players.length; i < 4; i++) bones[i].visible = heads[i].visible = rings[i].visible = false;
     for (const k of ["tv", "side", "p1", "p2"]) { if (!D.cams[k]) { camMarks[k].visible = camMarks[k].userData.label.visible = false; continue; } camMarks[k].visible = camMarks[k].userData.label.visible = true; const c = P(...D.cams[k]); camMarks[k].position.copy(c); camMarks[k].userData.label.position.copy(c.clone().add(new THREE.Vector3(0, 0.6, 0))); }
     const st = D.stats; document.getElementById("tlstat").textContent = `teacher: ${Math.round(D.conf_frac * 100)}% of flight frames labelled, ${D.hits.length} sure hits · student: shuttle median ${st.med_cm} cm from the labels, ${st.hits_match} of ${st.hits_t} hits found (${st.hits_s} predicted)` + (st.body_cm ? `, bodies ${st.body_cm[0]} cm from the teacher's` : "");
     frameNow = -1; video.src = vsrc(uid); setFrame(D.k0);
@@ -375,8 +370,15 @@ const R = [{"uid": "sf_0541", "secs": 14.0, "players": 2, "med_cm": 15.6, "body"
     if (D) setFrame(D.k0 + Math.min(D.k1 - D.k0, Math.max(0, Math.floor(video.currentTime * D.fps))));
     ctl.update(); renderer.render(scene, cam); requestAnimationFrame(tick);
   }
-  function resize() { const w = box.clientWidth, h = Math.round(w * 11 / 16); renderer.setSize(w, h, false); renderer.domElement.style.width = "100%"; renderer.domElement.style.height = "auto"; cam.aspect = w / h; cam.updateProjectionMatrix(); drawTL(); }
+  function resize() {
+    const w = box.clientWidth, h = box.clientHeight || Math.round(w * 11 / 16);
+    if (!w || !h) return;  // hidden or mid-transition: keep the last good size
+    const pr = Math.min(2, window.devicePixelRatio || 1, Math.sqrt(4.5e6 / (w * h)));  // at most ~4.5 MP of drawing buffer
+    renderer.setPixelRatio(pr); renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); drawTL();
+  }
   new ResizeObserver(resize).observe(box);
+  window.addEventListener("resize", resize); document.addEventListener("fullscreenchange", () => requestAnimationFrame(resize));
+  renderer.domElement.addEventListener("webglcontextrestored", resize);
 
   const rsel = document.getElementById("rsel");
   for (const r of R) { const o = document.createElement("option"); o.value = r.uid; o.textContent = `${r.uid} · ${r.secs}s · ${r.players === 4 ? "doubles" : "singles"} · shuttle ${r.med_cm} cm · bodies ${r.body ?? "–"} cm · hits ${r.hm}/${r.hits}`; rsel.appendChild(o); }
