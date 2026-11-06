@@ -1,6 +1,14 @@
 # Birdseye v2
 
+<p align="center">
+  <a href="https://cirozhang.github.io/Birdseye-v2/viewer/"><img alt="Open the interactive 3D demo" src="https://img.shields.io/badge/%E2%96%B6%20Live%20demo-interactive%203D%20rally%20viewer-1d8fa8?style=for-the-badge"></a>
+  &nbsp;
+  <a href="https://cirozhang.github.io/Birdseye-v2/"><img alt="Project page" src="https://img.shields.io/badge/Project%20page-cirozhang.github.io-555?style=for-the-badge"></a>
+</p>
+
 A whole badminton rally in 3D from one camera: players, rackets, the shuttle and every hit.
+
+**[Try the demo](https://cirozhang.github.io/Birdseye-v2/viewer/)**: six held-out DroneData rallies reconstructed from the back camera alone, played next to the video in your browser (no install).
 
 The only inputs are four off-the-shelf 2D detectors:
 
@@ -24,7 +32,7 @@ Training uses broadcast rallies with no 3D labels, plus:
 
 At run time the model needs no VIMO, no SMPL and no second camera.
 
-**Project page and interactive viewer:** `docs/` (GitHub Pages). Locally, run `python -m http.server -d docs 8000` and open http://localhost:8000.
+**Project page and interactive viewer:** [cirozhang.github.io/Birdseye-v2](https://cirozhang.github.io/Birdseye-v2/) ([demo](https://cirozhang.github.io/Birdseye-v2/viewer/)), built from `docs/`. To serve it locally, run `python -m http.server -d docs 8000` and open http://localhost:8000.
 
 ## Layout
 
