@@ -8,7 +8,7 @@
 
 A whole badminton rally in 3D from one camera: players, rackets, the shuttle and every hit.
 
-**[Try the demo](https://cirozhang.github.io/Birdseye-v2/viewer/)**: six held-out DroneData rallies reconstructed from the back camera alone, played next to the video in your browser (no install).
+**[Try the demo](https://cirozhang.github.io/Birdseye-v2/viewer/)**: six held-out broadcast rallies in 3D, played next to the video in your browser (no install). The student network sees only the TV feed; the teacher it learned from was fitted from all four venue cameras.
 
 The only inputs are four off-the-shelf 2D detectors:
 

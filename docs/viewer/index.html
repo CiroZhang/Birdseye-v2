@@ -1,597 +1,394 @@
-<!doctype html>
-<html lang="en">
-<meta charset="utf-8">
-<title>Birdseye Rally Viewer</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Barlow+Condensed:wght@500;600&display=swap">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<title>Teacher and Student</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: broadcast-booth split. 3D court left, the back-view feed + pipeline readout right,
-   one transport bar across the bottom. Single dark look (it is a video monitor). */
+/* Layout: 3D scene (left, large) beside the synced TV + side video (right, stacked); confidence timeline under both. */
 :root {
-  --bg: #0b0f14; --panel: #121821; --panel-2: #18202b; --line: #243040;
-  --ink: #e6ebf1; --ink-dim: #93a1b3; --ink-faint: #5f6e80;
-  --tape: #f2c94c;        /* DroneData court tape is yellow */
-  --near: #4fb3ff; --far: #ff7a6b; --gt: #f4f4f4; --v2: #f2c94c; --racket: #c38bff;
-  --good: #5fd39a; --warn: #f0a35c;
-  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
-  --body: "IBM Plex Sans", system-ui, sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, monospace;
-  color-scheme: dark;
+  --bg: #f2f4f1; --panel: #ffffff; --fg: #16201b; --muted: #5b6861; --rule: #d5dcd6; --chip: #e5ebe6;
+  --label: #c99a00; --unsure: #8d958f; --hit: #d33a2c; --tv: #2a78d6; --side: #e0702f; --stu: #0f9fb0; --good: #2f9e55; --mid: #d9a21b; --bad: #d33a2c;
+  --display: "Archivo", "Helvetica Neue", Arial, sans-serif; --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; --mono: "IBM Plex Mono", Consolas, monospace;
 }
-* { box-sizing: border-box; }
-[hidden] { display: none !important; }
-html, body { height: 100%; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 var(--body); overflow: hidden; }
-#app { height: 100%; display: grid; grid-template-rows: auto 1fr auto; }
-header { display: flex; align-items: center; gap: 16px; padding: 10px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-header h1 { font: 600 22px/1 var(--display); letter-spacing: 0.02em; margin: 0; text-transform: uppercase; }
-header h1 span { color: var(--tape); }
-header h1 a { color: inherit; text-decoration: none; }
-header h1 a:hover span { text-decoration: underline; }
-body.embed header h1, body.embed header .sub { display: none; }
-header .sub { color: var(--ink-dim); font-size: 12.5px; flex: 1; min-width: 200px; }
-select, button { font: 500 12.5px var(--mono); color: var(--ink); background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; cursor: pointer; }
-button:hover, select:hover { border-color: var(--ink-faint); }
-button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--tape); outline-offset: 2px; }
-main { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); min-height: 0; }
-#stage { position: relative; min-height: 0; border-right: 1px solid var(--line); }
-#stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
-.chip { position: absolute; font: 500 11px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-dim); background: rgba(11,15,20,0.78); border: 1px solid var(--line); border-radius: 5px; padding: 4px 8px; }
-#stage .chip.tl { top: 12px; left: 12px; }
-#viewbtns { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; }
-#viewbtns button.on { border-color: var(--tape); color: var(--tape); }
-#shotcard { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); font: 500 13px var(--mono); background: rgba(11,15,20,0.85); border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; white-space: nowrap; display: flex; gap: 12px; align-items: center; }
-#shotcard .side { font-weight: 600; }
-#hint { position: absolute; left: 12px; bottom: 14px; font-size: 11px; color: var(--ink-faint); line-height: 1.4; }
-aside { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
-#feed { position: relative; background: #000; aspect-ratio: 16 / 9; width: 100%; flex-shrink: 0; }
-#feed video, #feed canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-#feed .chip { top: 8px; left: 8px; }
-#readout { padding: 14px 16px 18px; display: flex; flex-direction: column; gap: 16px; }
-.stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-.stat { background: var(--panel); padding: 10px 12px; min-width: 0; }
-.stat .n { font: 600 24px/1.1 var(--display); font-variant-numeric: tabular-nums; }
-.stat .l { font-size: 11.5px; color: var(--ink-dim); }
-h2 { font: 600 15px var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-dim); margin: 0 0 8px; }
-.layers { display: flex; flex-wrap: wrap; gap: 6px; }
-.layers label { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 5px 11px 5px 9px; cursor: pointer; user-select: none; }
-.layers input { accent-color: var(--tape); margin: 0; }
-.sw { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-.shots-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font: 12.5px var(--mono); font-variant-numeric: tabular-nums; }
-th { text-align: left; font-weight: 500; color: var(--ink-faint); padding: 4px 6px; border-bottom: 1px solid var(--line); }
-td { padding: 4px 6px; border-bottom: 1px solid #1a2230; }
-tr.shot { cursor: pointer; }
-tr.shot:hover td { background: var(--panel-2); }
-tr.shot.cur td { background: #2a2614; }
-.tag { font-size: 11px; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--ink-dim); }
-.about { font-size: 13px; color: var(--ink-dim); max-width: 64ch; }
-.about p { margin: 0 0 8px; }
-.about b { color: var(--ink); font-weight: 500; }
-footer { border-top: 1px solid var(--line); padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: 12px; align-items: center; }
-#play { width: 38px; height: 38px; border-radius: 50%; background: var(--tape); color: #1a1405; border: none; font-size: 14px; padding: 0; }
-.speeds { display: flex; gap: 2px; }
-.speeds button.on { background: var(--tape); color: #1a1405; border-color: var(--tape); }
-#track { position: relative; height: 34px; }
-#ticks-d, #ticks-l { position: absolute; left: 0; right: 0; height: 9px; }
-#ticks-d { top: 0; } #ticks-l { bottom: 0; }
-.tk { position: absolute; width: 2px; height: 9px; transform: translateX(-1px); border-radius: 1px; }
-#ticks-d .tk { background: var(--v2); }
-#ticks-l .tk { background: var(--gt); opacity: 0.8; }
-#scrub { position: absolute; left: 0; right: 0; top: 12px; width: 100%; margin: 0; -webkit-appearance: none; appearance: none; height: 10px; background: transparent; }
-#scrub::-webkit-slider-runnable-track { height: 4px; background: var(--line); border-radius: 2px; }
-#scrub::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5px; border-radius: 50%; background: var(--tape); }
-#scrub::-moz-range-track { height: 4px; background: var(--line); border-radius: 2px; }
-#scrub::-moz-range-thumb { width: 14px; height: 14px; border: none; border-radius: 50%; background: var(--tape); }
-#clock { font: 12.5px var(--mono); color: var(--ink-dim); font-variant-numeric: tabular-nums; text-align: right; min-width: 120px; }
-.tracklegend { font-size: 10.5px; color: var(--ink-faint); display: flex; gap: 12px; }
-#loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--ink-dim); font: 13px var(--mono); }
-@media (max-width: 860px) {
-  body { overflow: auto; }
-  #app { height: auto; }
-  main { grid-template-columns: minmax(0, 1fr); }
-  #stage { height: 56vh; border-right: none; border-bottom: 1px solid var(--line); }
-  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  footer { position: sticky; bottom: 0; background: var(--bg); grid-template-columns: auto minmax(0, 1fr); }
-  .speeds, #clock { display: none; }
-  #hint { display: none; }
-}
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1512; --panel: #172019; --fg: #e4ebe6; --muted: #97a59c; --rule: #29342d; --chip: #212b25;
+  --label: #f2c200; --unsure: #8d958f; --hit: #f0645a; --tv: #5aa0f0; --side: #f08a4b; --stu: #28dceb; --good: #4cc276; --mid: #f0c040; --bad: #f0645a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1512; --panel: #172019; --fg: #e4ebe6; --muted: #97a59c; --rule: #29342d; --chip: #212b25;
+  --label: #f2c200; --unsure: #8d958f; --hit: #f0645a; --tv: #5aa0f0; --side: #f08a4b; --stu: #28dceb; --good: #4cc276; --mid: #f0c040; --bad: #f0645a; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--body); }
+.wrap { max-width: 1400px; margin: 0 auto; padding-block: 24px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 16px; }
+h1 { font: 800 clamp(24px, 3vw, 32px)/1.15 var(--display); margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 80ch; color: var(--muted); }
+.views { display: flex; flex-wrap: wrap; gap: 6px; }
+.picker { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font: 13px var(--mono); }
+.picker select { font: 600 13px var(--mono); padding: 6px 8px; border-radius: 6px; border: 1px solid var(--rule); background: var(--panel); color: var(--fg); max-width: 100%; }
+#rcount { color: var(--muted); }
+.hint { position: absolute; left: 10px; bottom: 10px; font: 12px var(--mono); color: #c8d2cc; background: rgba(0,0,0,.45); padding: 3px 8px; border-radius: 4px; pointer-events: none; }
+button { font: 600 12.5px var(--mono); background: var(--panel); color: var(--fg); border: 1px solid var(--rule); border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--tv); outline-offset: 2px; }
+.tabs button[aria-selected="true"], .views button.on { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.tabs button small { font-weight: 400; opacity: .7; margin-left: 6px; }
+.viewer { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 860px) { .viewer { grid-template-columns: 1fr; } }
+.pane { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; min-width: 0; display: grid; }
+#three { position: relative; width: 100%; aspect-ratio: 16/11; max-width: 100%; background: #0f1412; touch-action: none; }
+#three canvas { display: block; }
+.views { padding: 10px; border-top: 1px solid var(--rule); }
+video { width: 100%; max-width: 100%; aspect-ratio: 1280/720; background: #000; display: block; }
+.readout { padding: 10px 12px; font: 13px/1.7 var(--mono); border-top: 1px solid var(--rule); min-height: 4.6em; }
+.pill { display: inline-block; padding: 1px 7px; border-radius: 4px; font-weight: 600; }
+.pill.lab { background: var(--label); color: #1a1600; } .pill.uns { background: var(--chip); color: var(--muted); }
+.tl { padding: 10px 12px 12px; display: grid; gap: 6px; }
+.tl .cap { font: 12px var(--mono); color: var(--muted); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+#tl { width: 100%; height: 78px; display: block; cursor: pointer; touch-action: none; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.legend i { display: inline-block; width: 18px; height: 4px; border-radius: 2px; }
+.legend i.d { width: 10px; height: 10px; border-radius: 50%; }
 </style>
 
-<div id="app">
-  <header>
-    <h1><a href="../" title="Project page">Birdseye <span>v2</span></a></h1>
-    <div class="sub">One small model turns the back drone's 2D detections into players, rackets, shuttle and hits in 3D. No VIMO or SMPL when it runs. Top-drone ground truth shown for comparison.</div>
-    <label for="rally" class="sr" hidden>Rally</label>
-    <select id="rally" aria-label="Rally"></select>
-  </header>
-  <main>
-    <section id="stage">
-      <div id="loading">Loading rallies…</div>
-      <div class="chip tl" id="stagechip">3D reconstruction</div>
-      <div id="viewbtns">
-        <button id="v-orbit" class="on">Orbit</button>
-        <button id="v-cam">Back camera</button>
-        <button id="v-top">Top</button>
-        <button id="v-side">Side</button>
+<div class="wrap">
+  <h1>Teacher and student, in 3D</h1>
+  <p><b>Teacher</b> (yellow shuttle, solid bodies, orange rackets): fitted from all four cameras: TV, the fixed side camera and both player cameras. It labels only what it is sure of: yellow frames are labels, grey ones are left out. <b>Student</b> (cyan shuttle, cyan stick figures and rackets): one network that sees <i>only the TV feed</i>, trained to reproduce the teacher. These rallies were kept out of the student's training, so it has never seen their labels. Play or scrub the video, or click the timeline, and the 3D scene follows. Drag to orbit, scroll to zoom.</p>
+  <div class="picker"><button id="rprev" aria-label="previous rally">←</button><select id="rsel" aria-label="rally"></select><button id="rnext" aria-label="next rally">→</button><span id="rcount"></span></div>
+  <div class="viewer">
+    <div class="pane">
+      <div id="three"><div class="hint">drag to orbit · scroll to zoom · right-drag to pan</div></div>
+      <div class="views" id="views">
+        <button data-v="orbit">overview</button><button data-v="tv">from TV camera</button><button data-v="side">from side camera</button><button data-v="p1">from player cam 1</button><button data-v="p2">from player cam 2</button><button data-v="top">top-down</button><button data-v="end">along the net</button><button id="rkbtn" class="on" aria-pressed="true">rackets</button><button id="tbtn" class="on" aria-pressed="true">teacher</button><button id="sbtn" class="on" aria-pressed="true">student</button>
       </div>
-      <div id="hint">drag to orbit · scroll to zoom · shift+drag to pan</div>
-      <div id="shotcard" hidden></div>
-    </section>
-    <aside>
-      <div id="feed">
-        <video id="video" muted playsinline preload="auto"></video>
-        <canvas id="overlay"></canvas>
-        <div class="chip">Back drone · pipeline input</div>
-      </div>
-      <div id="readout">
-        <div class="stats">
-          <div class="stat"><div class="n" id="s-err">–</div><div class="l">median 3D error vs GT</div></div>
-          <div class="stat"><div class="n" id="s-mean">–</div><div class="l">mean 3D error</div></div>
-          <div class="stat"><div class="n" id="s-hits">–</div><div class="l">shots found / hits labeled</div></div>
-          <div class="stat"><div class="n" id="s-rec">–</div><div class="l">labeled hits recovered (±3 fr)</div></div>
-          <div class="stat"><div class="n" id="s-perr">–</div><div class="l">median player error vs top view</div></div>
-        </div>
-        <div>
-          <h2>Layers</h2>
-          <div class="layers">
-            <label><input type="checkbox" id="L-players" checked><span class="sw" style="background:var(--near)"></span>Players</label>
-            <label><input type="checkbox" id="L-racket" checked><span class="sw" style="background:var(--racket)"></span>Rackets</label>
-            <label><input type="checkbox" id="L-v2" checked><span class="sw" style="background:var(--v2)"></span>Shuttle (ours)</label>
-            <label><input type="checkbox" id="L-gt" checked><span class="sw" style="background:var(--gt)"></span>Shuttle ground truth</label>
-            <label><input type="checkbox" id="L-pgt" checked><span class="sw" style="background:transparent;border:2px solid var(--gt)"></span>Player ground truth</label>
-            <label><input type="checkbox" id="L-arcs"><span class="sw" style="background:var(--ink-faint)"></span>Shot arcs</label>
-            <label><input type="checkbox" id="L-2d" checked><span class="sw" style="background:#7fe0ff"></span>2D detections on video</label>
-          </div>
-        </div>
-        <div>
-          <h2>Shots</h2>
-          <div class="shots-wrap"><table>
-            <thead><tr><th>#</th><th>time</th><th>hitter</th><th>speed</th><th>apex</th><th>anchor</th></tr></thead>
-            <tbody id="shots"></tbody>
-          </table></div>
-        </div>
-        <div class="about">
-          <h2>How it works</h2>
-          <p><b>Input:</b> the back drone video, calibrated by BirdsCourt. Four 2D detectors are the only inputs: the court camera, TrackNetV3 for the shuttle, YOLOv8x-pose for the players and YOLOv8x for rackets. Every detection becomes a camera ray in court coordinates, so the model never sees pixels or which way the camera points.</p>
-          <p><b>3D:</b> One 6.6-million-parameter transformer reads every player, the shuttle and the rackets across the whole rally, and drives a small physical model of it. Each player is a skeleton with fixed bone lengths, held up only while a foot is on the floor. Each racket is a rigid stick in one hand, the model's choice for the whole rally, turned by the wrist, and it only counts a racket detection that is within reach of that wrist. The model also says who hits when. It was trained on about 4,400 broadcast rallies. During training only, VIMO showed it how each bone runs toward or away from the camera, wherever VIMO agreed with the 2D keypoints; triangulated poses from a few separate drone matches helped too. At run time it needs neither. The shuttle is a chain of gravity-and-drag flights between the model's hits, starting at the hitter's racket and fitted to the shuttle detections; the hitters' court sides come from the model, and a flight that cannot explain its detections gets the hit the model was least sure of. The drone rallies shown here were never trained on.</p>
-          <p><b>Ground truth</b> (white) is the shuttle triangulated from both drones; the white floor rings are the players as annotated in the top drone view. The pipeline never sees the top drone. On the video, the cyan dot is the TrackNet detection and the yellow ring is the 3D fit projected back into the image.</p>
-        </div>
-      </div>
-    </aside>
-  </main>
-  <footer>
-    <button id="play" aria-label="Play">▶</button>
-    <div class="speeds"><button data-s="1" class="on">1×</button><button data-s="0.5">0.5×</button><button data-s="0.25">0.25×</button></div>
-    <div>
-      <div id="track"><div id="ticks-d"></div><input type="range" id="scrub" min="0" max="1" step="1" value="0" aria-label="Frame"><div id="ticks-l"></div></div>
-      <div class="tracklegend"><span>▲ yellow: shots found by the pipeline</span><span>▼ white: labeled hits</span></div>
     </div>
-    <div id="clock">0 / 0</div>
-  </footer>
+    <div class="pane">
+      <video id="vid" controls muted playsinline preload="auto"></video>
+      <div class="readout" id="readout">loading…</div>
+    </div>
+  </div>
+  <div class="pane tl">
+    <div class="cap"><span>top: teacher (yellow = labelled, grey = unsure; red ticks = sure hits, grey ticks = hits it abstains on) · bottom: student (distance to the teacher on labelled frames: green &lt; 25 cm, amber &lt; 60 cm, red beyond; cyan ticks = student hits)</span><span id="tlstat"></span></div>
+    <canvas id="tl"></canvas>
+  </div>
+  <div class="legend">
+    <span><i class="d" style="background:var(--label)"></i>teacher shuttle, labelled</span><span><i class="d" style="background:var(--unsure)"></i>teacher shuttle, unsure (not a label)</span>
+    <span><i class="d" style="background:var(--stu)"></i>student shuttle (TV only)</span><span><i style="background:var(--stu)"></i>student players and rackets</span>
+    <span><i style="background:#ff5a10"></i>teacher racket (darker = more cameras see it, white = hitting the shuttle)</span><span><i style="background:#3fd0b0"></i>teacher, far side players</span><span><i style="background:#b59cff"></i>teacher, near side players</span>
+    <span><i style="background:var(--tv)"></i>TV camera ray (when it detects the shuttle)</span><span><i style="background:var(--side)"></i>side camera ray</span>
+  </div>
+  <p>Teacher players are VIMO (TRAM) 3D bodies placed on court by all four cameras, with rackets fitted to the racket boxes seen in every camera; the teacher's shuttle is a physical flight per shot (drag and gravity) through every camera's detections, with hits checked by a video hit model. The student predicts all of this from the TV feed alone, frame by frame, in a single network pass, with no per-rally fitting.</p>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-const W = 6.1, L = 13.4, NET_Y = 6.7, NET_H = 1.55, SW = 5.18, SS = 1.98, LS = 0.76, FPS = 30;
-const COL = { near: 0x4fb3ff, far: 0xff7a6b, gt: 0xf4f4f4, v2: 0xf2c94c, racket: 0xc38bff, tape: 0xf2c94c };
-const BONES_COCO = [[5,7],[7,9],[6,8],[8,10],[5,6],[5,11],[6,12],[11,12],[11,13],[13,15],[12,14],[14,16]];
-// SMPL-24 kinematic tree (TRAM/VIMO bodies)
-const SMPL_PARENT = [-1, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 12, 13, 14, 16, 17, 18, 19, 20, 21];
-const BONES_SMPL = SMPL_PARENT.map((p, i) => [p, i]).filter(([p]) => p >= 0);
-let BONES = BONES_COCO;
-const isSmpl = () => R && R.skel === "smpl24";
-const T = (p) => (p ? new THREE.Vector3(p[0] - W / 2, p[2], -(p[1] - NET_Y)) : null);
-const Tdir = (d) => new THREE.Vector3(d[0], d[2], -d[1]);
-const $ = (id) => document.getElementById(id);
-if (window.self !== window.top) document.body.classList.add("embed"); // inside the project page: the page carries the title
+const R = [{"uid": "sf_0541", "secs": 14.0, "players": 2, "med_cm": 15.6, "body": 11.2, "hm": 13, "hits": 13}, {"uid": "d1026_0085", "secs": 19.3, "players": 2, "med_cm": 16.9, "body": 15.0, "hm": 19, "hits": 19}, {"uid": "sf_0174", "secs": 8.8, "players": 2, "med_cm": 18.5, "body": 10.8, "hm": 7, "hits": 7}, {"uid": "d1026_0554", "secs": 5.8, "players": 2, "med_cm": 20.7, "body": 13.3, "hm": 6, "hits": 6}, {"uid": "d1026_0258", "secs": 10.1, "players": 2, "med_cm": 21.3, "body": 13.7, "hm": 10, "hits": 10}, {"uid": "sf_0702", "secs": 9.3, "players": 4, "med_cm": 21.2, "body": 14.3, "hm": 14, "hits": 15}]; const R_UNUSED = [{"uid": "sf_0076", "hits": 4, "conf": 0.793, "secs": 5.9}, {"uid": "sf_0105", "hits": 11, "conf": 0.744, "secs": 12.4}, {"uid": "sf_0153", "hits": 8, "conf": 0.638, "secs": 10.1}, {"uid": "sf_0062", "hits": 10, "conf": 0.625, "secs": 13.9}, {"uid": "sf_0559", "hits": 11, "conf": 0.593, "secs": 15.7}, {"uid": "sf_0283", "hits": 5, "conf": 0.59, "secs": 6.9}, {"uid": "sf_0022", "hits": 3, "conf": 0.562, "secs": 5.5}, {"uid": "sf_0026", "hits": 9, "conf": 0.56, "secs": 18.7}, {"uid": "sf_0570", "hits": 12, "conf": 0.559, "secs": 15.7}, {"uid": "sf_0418", "hits": 47, "conf": 0.556, "secs": 47.1}, {"uid": "sf_0529", "hits": 7, "conf": 0.545, "secs": 10.5}, {"uid": "sf_0595", "hits": 4, "conf": 0.517, "secs": 12.9}, {"uid": "sf_0593", "hits": 16, "conf": 0.509, "secs": 26.6}, {"uid": "sf_0520", "hits": 7, "conf": 0.503, "secs": 11.9}, {"uid": "sf_0260", "hits": 10, "conf": 0.473, "secs": 11.7}, {"uid": "sf_0280", "hits": 8, "conf": 0.459, "secs": 9.5}, {"uid": "sf_0452", "hits": 11, "conf": 0.445, "secs": 20.0}, {"uid": "sf_0174", "hits": 5, "conf": 0.435, "secs": 11.7}, {"uid": "sf_0388", "hits": 4, "conf": 0.417, "secs": 9.0}, {"uid": "sf_0116", "hits": 5, "conf": 0.413, "secs": 9.3}, {"uid": "sf_0638", "hits": 3, "conf": 0.386, "secs": 5.1}, {"uid": "sf_0288", "hits": 11, "conf": 0.378, "secs": 12.3}, {"uid": "sf_0056", "hits": 7, "conf": 0.372, "secs": 17.5}, {"uid": "sf_0744", "hits": 7, "conf": 0.371, "secs": 17.1}, {"uid": "sf_0217", "hits": 10, "conf": 0.36, "secs": 17.1}, {"uid": "sf_0664", "hits": 2, "conf": 0.35, "secs": 4.6}, {"uid": "sf_0481", "hits": 4, "conf": 0.291, "secs": 8.5}, {"uid": "sf_0118", "hits": 4, "conf": 0.289, "secs": 6.6}, {"uid": "sf_0300", "hits": 7, "conf": 0.226, "secs": 11.1}, {"uid": "sf_0467", "hits": 2, "conf": 0.185, "secs": 8.9}];
+(function () {
+  const W = 6.1, L = 13.4, NET = 6.7, POST = 1.55;
+  const P = (x, y, z) => new THREE.Vector3(x, z, -y);
+  const PARENT = [-1, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 12, 13, 14, 16, 17, 18, 19, 20, 21];  // SMPL 24 joints
+  const EDGES = PARENT.map((p, j) => [p, j]).filter(e => e[0] >= 0), WRISTS = [20, 21], HEAD = 15;
+  const YEL = new THREE.Color(0xf2c200), GRY = new THREE.Color(0x7d857f);
+  const box = document.getElementById("three");
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1)); box.prepend(renderer.domElement);
+  const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0f1412);
+  const cam = new THREE.PerspectiveCamera(45, 16 / 11, 0.05, 200);
+  const ctl = new THREE.OrbitControls(cam, renderer.domElement); ctl.enableDamping = true;
 
-// ---------- scene ----------
-const stage = $("stage");
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-stage.prepend(renderer.domElement);
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0b0f14);
-const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
-scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-const sun = new THREE.DirectionalLight(0xffffff, 0.6); sun.position.set(3, 10, 6); scene.add(sun);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(W + 6, L + 8), new THREE.MeshBasicMaterial({ color: 0x1f5a3a }));
+  floor.rotation.x = -Math.PI / 2; floor.position.copy(P(W / 2, L / 2, -0.002)); scene.add(floor);
+  const segs = [];
+  for (const x of [0, 0.46, W - 0.46, W]) segs.push([x, 0, x, L]);
+  for (const y of [0, 0.76, NET - 1.98, NET + 1.98, L - 0.76, L]) segs.push([0, y, W, y]);
+  segs.push([W / 2, 0, W / 2, NET - 1.98], [W / 2, NET + 1.98, W / 2, L]);
+  const lp = []; for (const [a, b, c, d] of segs) lp.push(P(a, b, 0.003), P(c, d, 0.003));
+  scene.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(lp), new THREE.LineBasicMaterial({ color: 0xf2f2f2 })));
+  const net = new THREE.Mesh(new THREE.PlaneGeometry(W, 0.76), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.18, side: THREE.DoubleSide }));
+  net.position.copy(P(W / 2, NET, POST - 0.38)); scene.add(net);
+  scene.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints([P(0, NET, 0), P(0, NET, POST), P(W, NET, 0), P(W, NET, POST), P(0, NET, POST), P(W, NET, POST)]), new THREE.LineBasicMaterial({ color: 0xffffff })));
+  const gp = []; for (let z = 1; z <= 6; z++) gp.push(P(-0.5, L + 0.6, z), P(W + 0.5, L + 0.6, z));
+  scene.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(gp), new THREE.LineBasicMaterial({ color: 0x33403a })));
+  function label(text, color) {
+    const c = document.createElement("canvas"); c.width = 256; c.height = 64; const g = c.getContext("2d");
+    g.font = "600 30px IBM Plex Mono, monospace"; g.fillStyle = color; g.fillText(text, 6, 42);
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false })); s.scale.set(2.4, 0.6, 1); return s;
+  }
+  for (let z = 1; z <= 6; z++) { const s = label(z + " m", "#6f7f77"); s.position.copy(P(-1.6, L + 0.6, z)); s.scale.set(1.6, 0.4, 1); scene.add(s); }
 
-const floor = new THREE.Mesh(new THREE.PlaneGeometry(W + 7, L + 7), new THREE.MeshStandardMaterial({ color: 0x1c232c, roughness: 1 }));
-floor.rotation.x = -Math.PI / 2; floor.position.y = -0.004; scene.add(floor);
-const courtM = new THREE.Mesh(new THREE.PlaneGeometry(W, L), new THREE.MeshStandardMaterial({ color: 0x1f5a4a, roughness: 0.9 }));
-courtM.rotation.x = -Math.PI / 2; scene.add(courtM);
-const tapeMat = new THREE.MeshBasicMaterial({ color: COL.tape });
-function line(x1, y1, x2, y2) { // court coords
-  const a = T([x1, y1, 0]), b = T([x2, y2, 0]);
-  const len = a.distanceTo(b);
-  const m = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.01, len), tapeMat);
-  m.position.copy(a.clone().add(b).multiplyScalar(0.5)); m.position.y = 0.006;
-  m.rotation.y = Math.atan2(b.x - a.x, b.z - a.z); scene.add(m);
-}
-const sx = (W - SW) / 2;
-line(0, 0, W, 0); line(0, L, W, L); line(0, 0, 0, L); line(W, 0, W, L);
-line(sx, 0, sx, L); line(W - sx, 0, W - sx, L);
-line(0, NET_Y - SS, W, NET_Y - SS); line(0, NET_Y + SS, W, NET_Y + SS);
-line(0, LS, W, LS); line(0, L - LS, W, L - LS);
-line(W / 2, 0, W / 2, NET_Y - SS); line(W / 2, NET_Y + SS, W / 2, L);
-const net = new THREE.Mesh(new THREE.PlaneGeometry(W + 0.1, 0.76), new THREE.MeshBasicMaterial({ color: 0xdfe6ee, transparent: true, opacity: 0.22, side: THREE.DoubleSide }));
-net.position.set(0, NET_H - 0.38, 0); scene.add(net);
-const netTop = new THREE.Mesh(new THREE.BoxGeometry(W + 0.1, 0.03, 0.02), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-netTop.position.set(0, NET_H, 0); scene.add(netTop);
-[-1, 1].forEach((s) => { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, NET_H, 8), new THREE.MeshStandardMaterial({ color: 0x8892a0 })); p.position.set(s * (W / 2 + 0.05), NET_H / 2, 0); scene.add(p); });
+  const camMarks = {}, rays = {};
+  for (const [k, col, txt] of [["tv", 0x5aa0f0, "TV camera"], ["side", 0xf08a4b, "side camera"], ["p1", 0xd986ff, "player cam 1"], ["p2", 0x5fd0c0, "player cam 2"]]) {
+    camMarks[k] = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.35, 0.35), new THREE.MeshBasicMaterial({ color: col })); scene.add(camMarks[k]);
+    const s = label(txt, "#" + col.toString(16)); camMarks[k].userData.label = s; scene.add(s);
+    rays[k] = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.8 })); scene.add(rays[k]);
+  }
+  const triPts = new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ color: 0xf4f4f4, size: 0.05 })); scene.add(triPts);
+  const ballMat = new THREE.MeshBasicMaterial({ color: 0xf2c200 });
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 12), ballMat); scene.add(ball);
+  // Claude's hand reconstruction (shuttle marked by eye in TV + side, physical flight per shot), where present
+  const handBall = new THREE.Mesh(new THREE.SphereGeometry(0.075, 16, 12), new THREE.MeshBasicMaterial({ color: 0x35d06a })); handBall.visible = false; scene.add(handBall);
+  let handF = {};
+  // Claude's hand-marked players: head, hips and both feet, joined by lines (green)
+  const HG = 0x35d06a, handMat = new THREE.LineBasicMaterial({ color: HG }), handDot = new THREE.MeshBasicMaterial({ color: HG });
+  const handPl = [0, 1, 2, 3].map(() => {
+    const g = new THREE.Group(), lines = [0, 1, 2].map(() => { const l = new THREE.Line(new THREE.BufferGeometry(), handMat); g.add(l); return l; });
+    const dots = [0.11, 0.06, 0.05, 0.05].map(r => { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 8), handDot); g.add(m); return m; });
+    g.visible = false; scene.add(g); return { g, lines, dots };
+  });
+  const drop = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.4 })); scene.add(drop);
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.1, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45 }));
+  shadow.rotation.x = -Math.PI / 2; scene.add(shadow);
+  const bones = [], heads = [], shafts = [], rings = [];
+  const RK_SHAFT = 0.435, RK_HEAD_H = 0.23, RK_HEAD_W = 0.2, RK_BUTT = 0.07;  // the hand holds the grip 7 cm from its end
+  const RK_COL = [0xffd2a8, 0xff8c28, 0xff5a10, 0xffffff];  // racket: no camera sees it, one camera, two or more, at a hit (head on the shuttle)
+  const TEAM = [[0xb59cff, 0xd9c9ff], [0x3fd0b0, 0x9be8d6]];  // near side, far side (two shades for partners)
+  // solid bodies: a shaded tube per SMPL bone (radius by body part) and a ball at every joint so the tubes join smoothly
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x334038, 0.75));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.55); sun.position.set(4, 10, 6); scene.add(sun);
+  const BONE_R = { "0,3": 0.085, "3,6": 0.09, "6,9": 0.095, "9,12": 0.06, "12,15": 0.05, "0,1": 0.075, "0,2": 0.075, "9,13": 0.065, "9,14": 0.065,
+    "13,16": 0.06, "14,17": 0.06, "1,4": 0.068, "2,5": 0.068, "4,7": 0.05, "5,8": 0.05, "7,10": 0.035, "8,11": 0.035,
+    "16,18": 0.045, "17,19": 0.045, "18,20": 0.037, "19,21": 0.037, "20,22": 0.03, "21,23": 0.03 };
+  const boneR = EDGES.map(([u, w]) => 0.5 * (BONE_R[u + "," + w] ?? 0.04));
+  const jointR = new Array(24).fill(0); EDGES.forEach(([u, w], e) => { jointR[u] = Math.max(jointR[u], boneR[e]); jointR[w] = Math.max(jointR[w], boneR[e]); });
+  const TUBE = new THREE.CylinderGeometry(1, 1, 1, 12), BALL = new THREE.SphereGeometry(1, 12, 10), UP = new THREE.Vector3(0, 1, 0);
+  for (let i = 0; i < 4; i++) {
+    const g = new THREE.Group(), bmat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    g.userData.tubes = EDGES.map(() => { const m = new THREE.Mesh(TUBE, bmat); g.add(m); return m; });
+    g.userData.balls = jointR.map(r => { const m = new THREE.Mesh(BALL, bmat); m.scale.setScalar(r); m.visible = r > 0; g.add(m); return m; });
+    g.material = bmat; bones.push(g); scene.add(g);
+    heads.push(new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 12), bmat)); scene.add(heads[i]);
+    rings.push(racketGroup(0xff8c28)); shafts.push(null);
+  }
+  // a real badminton racket, fixed size: 0.665 m long, oval head ~0.23 x 0.20 m; grip at the wrist
+  function racketGroup(color) {
+    const rg = new THREE.Group(), mat = new THREE.MeshBasicMaterial({ color });
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.016, RK_SHAFT, 8), mat); shaft.position.y = RK_SHAFT / 2; rg.add(shaft);
+    const head = new THREE.Group(); head.position.y = RK_SHAFT + RK_HEAD_H / 2;
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.012, 8, 32), mat); head.add(rim);
+    head.add(new THREE.Mesh(new THREE.CircleGeometry(0.1, 32), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.3, side: THREE.DoubleSide })));
+    head.scale.set(RK_HEAD_W / 0.2, RK_HEAD_H / 0.2, 1); rg.add(head);
+    rg.userData.mats = [mat, head.children[1].material]; scene.add(rg); return rg;
+  }
+  function placeRacket(rg, gripPt, dir) {  // grip point (hand), unit direction grip -> head
+    const y = dir.clone().normalize(), w = gripPt.clone().sub(y.clone().multiplyScalar(RK_BUTT));
+    let z = cam.position.clone().sub(w); z.sub(y.clone().multiplyScalar(z.dot(y))).normalize();
+    const x = new THREE.Vector3().crossVectors(y, z);
+    rg.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z)); rg.position.copy(w);
+  }
 
-// back camera marker
-const camMarker = new THREE.Group(); scene.add(camMarker);
-
-// players: pool of skeletons
-const sphereG = new THREE.SphereGeometry(0.035, 8, 6), cylG = new THREE.CylinderGeometry(0.022, 0.022, 1, 6), headG = new THREE.SphereGeometry(0.1, 12, 10);
-const mats = { n: new THREE.MeshStandardMaterial({ color: COL.near }), f: new THREE.MeshStandardMaterial({ color: COL.far }) };
-const skels = [];
-function getSkel(i) {
-  while (skels.length <= i) {
+  // student: cyan shuttle + trail, 17-joint stick figures, thin rackets
+  const STU = 0x28dceb, COCO = [[0,1],[0,2],[1,3],[2,4],[5,6],[5,7],[7,9],[6,8],[8,10],[5,11],[6,12],[11,12],[11,13],[13,15],[12,14],[14,16]];
+  const sBall = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 12), new THREE.MeshBasicMaterial({ color: STU })); scene.add(sBall);
+  const sDrop = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: STU, transparent: true, opacity: 0.45 })); scene.add(sDrop);
+  const sTrail = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: STU })); scene.add(sTrail);
+  const tTrail = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xf2c200 })); scene.add(tTrail);
+  const sMat = new THREE.MeshBasicMaterial({ color: STU, transparent: true, opacity: 0.8 });
+  const sBody = [0, 1, 2, 3].map(() => {
     const g = new THREE.Group();
-    const joints = [...Array(24)].map(() => { const m = new THREE.Mesh(sphereG, mats.n); g.add(m); return m; });
-    const bones = BONES_SMPL.map(() => { const m = new THREE.Mesh(cylG, mats.n); g.add(m); return m; });
-    const head = new THREE.Mesh(headG, mats.n); g.add(head);
-    scene.add(g); skels.push({ g, joints, bones, head });
+    g.userData.tubes = PARENT.map(() => { const m = new THREE.Mesh(TUBE, sMat); g.add(m); return m; });
+    g.userData.head = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 8), sMat); g.add(g.userData.head);
+    g.userData.rkm = racketGroup(STU);
+    scene.add(g); return g;
+  });
+  function tube(m, a, b, r) {
+    const d = b.clone().sub(a), len = d.length(); m.visible = len > 1e-4; if (!m.visible) return;
+    m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(UP, d.divideScalar(len)); m.scale.set(r, len, r);
   }
-  return skels[i];
-}
-const UP = new THREE.Vector3(0, 1, 0);
-function placeCyl(m, a, b) {
-  const d = b.clone().sub(a), len = d.length();
-  if (len < 1e-4) { m.visible = false; return; }
-  m.visible = true; m.position.copy(a).add(b).multiplyScalar(0.5); m.scale.set(1, len, 1);
-  m.quaternion.setFromUnitVectors(UP, d.divideScalar(len));
-}
+  let showT = true, showS = true, sByF = {};
 
-// mannequin for COCO-17 bodies: tapered limbs (radius at parent -> child), joint balls, chest/pelvis shells, feet
-const LIMBS = [[5, 7, 0.05, 0.04], [7, 9, 0.04, 0.032], [6, 8, 0.05, 0.04], [8, 10, 0.04, 0.032],
-               [11, 13, 0.075, 0.052], [13, 15, 0.05, 0.036], [12, 14, 0.075, 0.052], [14, 16, 0.05, 0.036]];
-const BALLS = [[5, 0.05], [6, 0.05], [7, 0.04], [8, 0.04], [9, 0.033], [10, 0.033], [13, 0.052], [14, 0.052], [15, 0.036], [16, 0.036]];
-const unitBall = new THREE.SphereGeometry(1, 20, 14), footG = new THREE.BoxGeometry(0.09, 0.07, 0.25);
-const skinMats = {}, darkMats = {};
-for (const k of ["n", "f"]) {
-  const c = new THREE.Color(COL[k === "n" ? "near" : "far"]);
-  skinMats[k] = new THREE.MeshStandardMaterial({ color: c, roughness: 0.45, metalness: 0.05 });
-  darkMats[k] = new THREE.MeshStandardMaterial({ color: c.clone().multiplyScalar(0.55), roughness: 0.6 });
-}
-const mannequins = [];
-function getMannequin(i) {
-  while (mannequins.length <= i) {
-    const g = new THREE.Group(), add = (geo) => { const m = new THREE.Mesh(geo, skinMats.n); g.add(m); return m; };
-    const limbs = LIMBS.map(([, , ra, rb]) => add(new THREE.CylinderGeometry(rb, ra, 1, 14)));
-    const balls = BALLS.map(() => add(unitBall));
-    mannequins.push({ g, limbs, balls, chest: add(unitBall), pelvis: add(unitBall), belly: add(new THREE.CylinderGeometry(0.12, 0.13, 1, 16)),
-                      neck: add(new THREE.CylinderGeometry(0.045, 0.05, 1, 10)), head: add(unitBall), hands: [add(unitBall), add(unitBall)],
-                      feet: [add(footG), add(footG)] });
-    scene.add(g);
+  function segGeom(geom, rows) {  // rows: consecutive path rows -> coloured segments
+    const pos = [], col = [];
+    for (let i = 1; i < rows.length; i++) {
+      const a = rows[i - 1], b = rows[i], c = a[4] && b[4] ? YEL : GRY;
+      for (const r of [a, b]) { const v = P(r[1], r[2], r[3]); pos.push(v.x, v.y, v.z); col.push(c.r, c.g, c.b); }
+    }
+    geom.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); geom.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+    geom.computeBoundingSphere();
   }
-  return mannequins[i];
-}
-const _m4 = new THREE.Matrix4();
-function placeShell(m, c, x, y, s) { // ellipsoid at c, axes x (side) and y (up, made orthogonal to x), half-sizes s
-  const yy = y.clone().sub(x.clone().multiplyScalar(y.dot(x))).normalize(), z = new THREE.Vector3().crossVectors(x, yy);
-  m.position.copy(c); m.quaternion.setFromRotationMatrix(_m4.makeBasis(x, yy, z)); m.scale.set(...s); m.visible = true;
-}
-function drawMannequin(s, pts, side) {
-  const skin = skinMats[side], dark = darkMats[side];
-  s.g.children.forEach((c) => { c.material = skin; });
-  LIMBS.forEach(([a, b], i) => { if (pts[a] && pts[b]) placeCyl(s.limbs[i], pts[a], pts[b]); else s.limbs[i].visible = false; });
-  BALLS.forEach(([j, r], i) => { const m = s.balls[i]; m.visible = !!pts[j]; if (pts[j]) { m.position.copy(pts[j]); m.scale.setScalar(r); } });
-  [s.chest, s.pelvis, s.belly, s.neck, s.head, ...s.feet, ...s.hands].forEach((m) => { m.visible = false; });
-  if (![5, 6, 11, 12].every((j) => pts[j])) return;
-  const sho = pts[5].clone().add(pts[6]).multiplyScalar(0.5), hip = pts[11].clone().add(pts[12]).multiplyScalar(0.5);
-  const spine = sho.clone().sub(hip), sl = spine.length(); if (sl < 0.1) return;
-  const up = spine.clone().divideScalar(sl);
-  const xs = pts[5].clone().sub(pts[6]).normalize(), xh = pts[11].clone().sub(pts[12]).normalize();
-  const sw = pts[5].distanceTo(pts[6]), hw = pts[11].distanceTo(pts[12]);
-  placeShell(s.chest, sho.clone().addScaledVector(up, -0.17 * sl), xs, up, [sw * 0.5, sl * 0.28, 0.105]);
-  placeShell(s.pelvis, hip.clone().addScaledVector(up, 0.06), xh, up, [hw * 0.8, 0.12, 0.1]);
-  placeCyl(s.belly, hip.clone().addScaledVector(up, 0.1), sho.clone().addScaledVector(up, -0.3 * sl));
-  s.belly.material = dark; s.pelvis.material = dark;
-  // head: an ellipsoid over the face keypoints, joined to the shoulders by the neck
-  const fp = pts.slice(0, 5).filter(Boolean);
-  const hc = fp.length ? fp.reduce((a, b) => a.add(b), new THREE.Vector3()).multiplyScalar(1 / fp.length) : sho.clone().addScaledVector(up, 0.25);
-  const hu = hc.clone().sub(sho).normalize();
-  placeCyl(s.neck, sho.clone().addScaledVector(up, -0.02), hc.clone().addScaledVector(hu, -0.08));
-  placeShell(s.head, hc, xs, hu, [0.085, 0.11, 0.095]);
-  // facing: horizontal, across the hips, toward the nose (or where the knees point when the face is missing)
-  const fwd = new THREE.Vector3().crossVectors(UP, xh).setY(0).normalize();
-  const cue = pts[0] ? pts[0].clone().sub(sho) : (pts[13] && pts[14] ? pts[13].clone().add(pts[14]).multiplyScalar(0.5).sub(hip) : null);
-  if (cue && cue.setY(0).dot(fwd) < 0) fwd.negate();
-  // hands: a fist just past each wrist, along the forearm
-  [[7, 9], [8, 10]].forEach(([e, w], k) => {
-    if (!pts[e] || !pts[w]) return;
-    const m = s.hands[k]; m.visible = true;
-    m.position.copy(pts[w]).addScaledVector(pts[w].clone().sub(pts[e]).normalize(), 0.055); m.scale.set(0.042, 0.048, 0.042);
-  });
-  // feet: a shoe from the ankle forward along the facing, resting on the floor
-  [15, 16].forEach((a, k) => {
-    if (!pts[a]) return;
-    const m = s.feet[k]; m.visible = true; m.material = dark;
-    const c = pts[a].clone().addScaledVector(fwd, 0.07); c.y = Math.max(0.035, pts[a].y - 0.04);
-    m.position.copy(c); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), fwd);
-  });
-}
 
-// rackets: one fixed-size model per player (675 mm overall, head 290 x 220 mm)
-const racketMat = new THREE.MeshStandardMaterial({ color: COL.racket, emissive: 0x3a1f66 });
-const racketGuess = new THREE.MeshStandardMaterial({ color: COL.racket, emissive: 0x3a1f66, transparent: true, opacity: 0.35 });
-const rackets = [];
-function getRacket(i) {
-  while (rackets.length <= i) {
-    const g = new THREE.Group();
-    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 1, 6), racketMat);
-    const head = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.07, 6, 28), racketMat);
-    g.add(handle); g.add(head); scene.add(g); rackets.push({ g, handle, head });
+  // A player holds the racket in one hand all rally and it never vanishes: the racket hand is the wrist nearer the
+  // detected heads over the rally; between detections (the detector misses ~10-35% of frames) its direction from the
+  // hand is interpolated, held at the ends, and smoothed over +-2 frames.
+  function racketTrack(pl) {
+    if (pl.rkfit && Object.keys(pl.rkfit).length) {  // multi-camera racket fit: grip + direction per frame
+      pl.rk = {}; pl.hand = WRISTS[1];
+      for (const [k, r] of Object.entries(pl.rkfit)) pl.rk[k] = { grip: r.slice(0, 3), dir: r.slice(3, 6), src: r[6] };
+      return;
+    }
+    const ks = Object.keys(pl.frames).map(Number).sort((a, b) => a - b);
+    const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], nrm = v => { const n = Math.hypot(...v) || 1; return v.map(c => c / n); };
+    const vote = [0, 0];
+    for (const k of ks) { const R = pl.racket[k], J = pl.frames[k]; if (!R) continue;
+      const d = WRISTS.map(j => J[j] ? Math.hypot(...sub(R, J[j])) : 1e9); vote[d[0] <= d[1] ? 0 : 1]++; }
+    pl.hand = WRISTS[vote[0] >= vote[1] ? 0 : 1]; pl.rk = {};
+    const det = ks.filter(k => pl.racket[k] && pl.frames[k][pl.hand] && Math.hypot(...sub(pl.racket[k], pl.frames[k][pl.hand])) > 0.05);
+    if (!det.length) return;
+    const dir = k => nrm(sub(pl.racket[k], pl.frames[k][pl.hand]));
+    const raw = {}; let j = 0;
+    for (const k of ks) {
+      while (j < det.length - 1 && det[j + 1] <= k) j++;
+      const a = det[j], b = det[Math.min(j + 1, det.length - 1)];
+      if (k <= a || a === b) raw[k] = [dir(a), a]; else if (k >= b) raw[k] = [dir(b), b];
+      else { const t = (k - a) / (b - a), da = dir(a), db = dir(b); raw[k] = [nrm(da.map((c, q) => (1 - t) * c + t * db[q])), t < 0.5 ? a : b]; }
+    }
+    for (const k of ks) {
+      const s = [0, 0, 0]; for (let q = k - 2; q <= k + 2; q++) if (raw[q]) raw[q][0].forEach((c, n) => s[n] += c);
+      const near = raw[k][1];
+      pl.rk[k] = { dir: nrm(s), src: pl.racket[k] ? pl.racket[k][3] : (pl.racket[near][3] === 3 ? 2 : pl.racket[near][3]) };
+    }
   }
-  return rackets[i];
-}
-// top-view annotated player positions: white floor rings
-const pgRings = [];
-const pgGeo = new THREE.RingGeometry(0.16, 0.22, 28), pgMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
-function getPg(i) { while (pgRings.length <= i) { const m = new THREE.Mesh(pgGeo, pgMat); m.rotation.x = -Math.PI / 2; scene.add(m); pgRings.push(m); } return pgRings[i]; }
 
-// shuttles + trails
-function ball(color, r, emissive) {
-  const m = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 10), new THREE.MeshStandardMaterial({ color, emissive: emissive || 0x000000 }));
-  scene.add(m); return m;
-}
-const v2Ball = ball(COL.v2, 0.06, 0x7a5a00), gtBall = ball(COL.gt, 0.045, 0x333333);
-const v2Shadow = new THREE.Mesh(new THREE.CircleGeometry(0.07, 16), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45 }));
-v2Shadow.rotation.x = -Math.PI / 2; scene.add(v2Shadow);
-function trail(color, n, opacity) {
-  const pos = new Float32Array(n * 3), g = new THREE.BufferGeometry();
-  g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-  const l = new THREE.Line(g, new THREE.LineBasicMaterial({ color, transparent: true, opacity })); scene.add(l);
-  return { l, g, pos, n };
-}
-const v2Trail = trail(COL.v2, 24, 0.9), gtTrail = trail(COL.gt, 24, 0.6);
-let arcs = [], gtCloud = null, hitMarks = [];
+  let D = null, byF = {}, frameNow = -1, whole = true, showRk = true;
+  const video = document.getElementById("vid"), readout = document.getElementById("readout");
+  const tl = document.getElementById("tl"), tlg = tl.getContext("2d");
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
-// ---------- camera controls ----------
-let mode = "orbit";
-const sph = { r: 17, th: 0.55, ph: 0.95 }, target = new THREE.Vector3(0, 0.8, 0);
-function applyOrbit() {
-  const p = Math.max(0.05, Math.min(Math.PI / 2 - 0.02, sph.ph));
-  camera.up.set(0, 1, 0);
-  camera.position.set(target.x + sph.r * Math.sin(p) * Math.sin(sph.th), target.y + sph.r * Math.cos(p), target.z + sph.r * Math.sin(p) * Math.cos(sph.th));
-  camera.lookAt(target);
-  if (camera.fov !== 45) { camera.fov = 45; camera.updateProjectionMatrix(); }
-}
-function setMode(m) {
-  mode = m;
-  ["orbit", "cam", "top", "side"].forEach((k) => $("v-" + k).classList.toggle("on", k === m));
-  if (m === "top") { sph.th = 0; sph.ph = 0.05; sph.r = 19; target.set(0, 0, 0); }
-  if (m === "side") { sph.th = Math.PI / 2; sph.ph = 1.35; sph.r = 15; target.set(0, 1.5, 0); }
-  if (m === "orbit") { sph.th = 0.55; sph.ph = 0.95; sph.r = 17; target.set(0, 0.8, 0); }
-  if (m === "cam") applyBackCam(); else applyOrbit();
-  draw();
-}
-function applyBackCam() {
-  const c = R.cam;
-  camera.position.copy(T(c.c));
-  camera.up.copy(Tdir(c.down).multiplyScalar(-1));
-  camera.lookAt(camera.position.clone().add(Tdir(c.fwd)));
-  camera.fov = c.vfov; camera.updateProjectionMatrix();
-}
-["orbit", "cam", "top", "side"].forEach((k) => $("v-" + k).addEventListener("click", () => setMode(k)));
-let drag = null;
-renderer.domElement.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, y: e.clientY, pan: e.shiftKey || e.button === 2 }; renderer.domElement.setPointerCapture(e.pointerId); });
-renderer.domElement.addEventListener("pointerup", () => (drag = null));
-renderer.domElement.addEventListener("contextmenu", (e) => e.preventDefault());
-renderer.domElement.addEventListener("pointermove", (e) => {
-  if (!drag) return;
-  const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY;
-  if (mode !== "orbit") { mode = "orbit"; ["orbit", "cam", "top", "side"].forEach((k) => $("v-" + k).classList.toggle("on", k === "orbit")); }
-  if (drag.pan) {
-    const s = 0.0025 * sph.r, right = new THREE.Vector3(Math.cos(sph.th), 0, -Math.sin(sph.th));
-    target.addScaledVector(right, -dx * s); target.y = Math.max(0, target.y + dy * s);
-  } else { sph.th -= dx * 0.006; sph.ph -= dy * 0.006; }
-  applyOrbit(); draw();
-});
-renderer.domElement.addEventListener("wheel", (e) => {
-  e.preventDefault();
-  if (mode === "cam") setMode("orbit");
-  sph.r = Math.max(3, Math.min(45, sph.r * (1 + e.deltaY * 0.001))); applyOrbit(); draw();
-}, { passive: false });
-
-function resize() {
-  const w = stage.clientWidth, h = stage.clientHeight;
-  renderer.setSize(w, h, false); renderer.domElement.style.width = w + "px"; renderer.domElement.style.height = h + "px";
-  camera.aspect = w / h; camera.updateProjectionMatrix();
-  const fd = $("feed"), oc = $("overlay");
-  oc.width = fd.clientWidth * Math.min(window.devicePixelRatio, 2); oc.height = fd.clientHeight * Math.min(window.devicePixelRatio, 2);
-  if (R) { buildTicks(); draw(); }
-}
-window.addEventListener("resize", resize);
-
-// ---------- data ----------
-let DATA = [], R = null, frame = 0, playing = false, speed = 1, clockT = 0, lastTs = null;
-const video = $("video"), scrub = $("scrub");
-const layer = (k) => $("L-" + k).checked;
-document.querySelectorAll(".layers input").forEach((i) => i.addEventListener("change", () => { arcs.forEach((a) => (a.visible = layer("arcs"))); hitMarks.forEach((a) => (a.visible = layer("arcs"))); if (gtCloud) gtCloud.visible = layer("gt"); draw(); }));
-
-function clearRally() {
-  [...arcs, ...hitMarks].forEach((o) => { scene.remove(o); o.geometry.dispose(); });
-  arcs = []; hitMarks = [];
-  if (gtCloud) { scene.remove(gtCloud); gtCloud.geometry.dispose(); gtCloud = null; }
-}
-function loadRally(i) {
-  R = DATA[i]; BONES = isSmpl() ? BONES_SMPL : BONES_COCO; clearRally();
-  R.shots.forEach((s, k) => {
-    const pts = s.path.filter(Boolean).map(T);
-    if (pts.length < 2) return;
-    const g = new THREE.BufferGeometry().setFromPoints(pts);
-    const a = new THREE.Line(g, new THREE.LineBasicMaterial({ color: s.side === "near" ? COL.near : COL.far, transparent: true, opacity: 0.35 }));
-    a.visible = layer("arcs"); scene.add(a); arcs.push(a);
-  });
-  const gp = R.gt_path.map((q) => T(q.slice(1)));
-  gtCloud = new THREE.Points(new THREE.BufferGeometry().setFromPoints(gp), new THREE.PointsMaterial({ color: COL.gt, size: 0.035, transparent: true, opacity: 0.35 }));
-  gtCloud.visible = layer("gt"); scene.add(gtCloud);
-  // camera marker
-  camMarker.clear();
-  const cpos = T(R.cam.c), fwd = Tdir(R.cam.fwd);
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.22, 0.22), new THREE.MeshStandardMaterial({ color: 0x9aa7b8 }));
-  body.position.copy(cpos); body.lookAt(cpos.clone().add(fwd)); camMarker.add(body);
-  camMarker.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([cpos, cpos.clone().add(fwd.clone().multiplyScalar(3))]), new THREE.LineBasicMaterial({ color: 0x9aa7b8, transparent: true, opacity: 0.5 })));
-
-  const m = R.metrics;
-  $("s-err").textContent = m.err_median.toFixed(2) + " m";
-  $("s-mean").textContent = m.err_mean.toFixed(2) + " m";
-  $("s-hits").textContent = R.shots.length + " / " + m.hits_labeled;
-  $("s-rec").textContent = Math.round(m.hit_recall * 100) + "%";
-  $("s-perr").textContent = m.player_err_median != null ? m.player_err_median.toFixed(2) + " m" : "–";
-  $("shots").innerHTML = R.shots.map((s, k) => `<tr class="shot" data-k="${k}"><td>${k + 1}</td><td>${(s.t0 / FPS).toFixed(2)}s</td>
-    <td><span class="sw" style="background:var(--${s.side})"></span> ${s.side}</td><td>${s.speed.toFixed(0)} km/h</td><td>${s.apex.toFixed(2)} m</td>
-    <td>${s.anchored ? '<span class="tag">hand</span>' : '<span class="tag">none</span>'}</td></tr>`).join("");
-  document.querySelectorAll("tr.shot").forEach((tr) => tr.addEventListener("click", () => seek(Math.max(0, Math.floor(R.shots[+tr.dataset.k].t0) - 5))));
-  scrub.max = R.n - 1;
-  video.src = R.clip; video.playbackRate = speed;
-  setPlaying(false); seek(0);
-  buildTicks();
-  if (mode === "cam") applyBackCam();
-}
-function buildTicks() {
-  const pct = (t) => (100 * t / Math.max(R.n - 1, 1)).toFixed(3) + "%";
-  $("ticks-d").innerHTML = R.shots.map((s) => `<div class="tk" style="left:${pct(s.t0)}" title="shot at ${(s.t0 / FPS).toFixed(2)}s"></div>`).join("");
-  $("ticks-l").innerHTML = R.labels.map((t) => `<div class="tk" style="left:${pct(t)}"></div>`).join("");
-}
-
-// ---------- per-frame draw ----------
-function setTrail(tr, idx, key) {
-  let c = 0;
-  for (let i = 0; i < tr.n; i++) {
-    const f = idx - i; if (f < 0) break;
-    const p = R.frames[f][key]; if (!p) { if (key === "g") continue; break; }
-    const v = T(p); tr.pos[c * 3] = v.x; tr.pos[c * 3 + 1] = v.y; tr.pos[c * 3 + 2] = v.z; c++;
+  function drawTL() {
+    if (!D) return;
+    const w = tl.clientWidth, h = tl.clientHeight, dpr = Math.min(2, window.devicePixelRatio || 1);
+    tl.width = w * dpr; tl.height = h * dpr; tlg.setTransform(dpr, 0, 0, dpr, 0, 0); tlg.clearRect(0, 0, w, h);
+    const n = D.k1 - D.k0 + 1, x = f => (f - D.k0) / n * w, bw = Math.max(1, w / n + 0.5);
+    tlg.fillStyle = css("--chip"); tlg.fillRect(0, 8, w, 24); tlg.fillRect(0, 46, w, 24);
+    for (const r of D.path) { tlg.fillStyle = r[4] ? css("--label") : css("--unsure"); tlg.fillRect(x(r[0]), 8, bw, 24); }
+    tlg.fillStyle = css("--hit"); for (const hf of D.hits) tlg.fillRect(x(hf) - 1, 3, 2.5, 34);
+    tlg.fillStyle = css("--unsure"); for (const hf of D.hits_unsure || []) tlg.fillRect(x(hf) - 1, 3, 2.5, 34);
+    for (const [f, dv] of Object.entries(D.student.dist)) { tlg.fillStyle = dv < 0.25 ? css("--good") : dv < 0.6 ? css("--mid") : css("--bad"); tlg.fillRect(x(+f), 46, bw, 24); }
+    tlg.fillStyle = css("--stu"); for (const hf of D.student.hits) tlg.fillRect(x(hf) - 1, 41, 2.5, 34);
+    if (frameNow >= 0) { tlg.fillStyle = css("--fg"); tlg.fillRect(x(frameNow) - 1, 0, 2, h); }
   }
-  tr.g.setDrawRange(0, c); tr.g.attributes.position.needsUpdate = true; tr.l.visible = c > 1;
-}
-function curShot(f) { let k = -1; R.shots.forEach((s, i) => { if (f >= s.t0 - 0.5) k = i; }); return k; }
-function draw() {
-  if (!R) return;
-  const F = R.frames[frame];
-  // players
-  let used = 0, usedM = 0;
-  if (layer("players")) F.p.forEach((p) => {
-    const pts = p.j.map(T);
-    if (!isSmpl()) { const m = getMannequin(usedM++); m.g.visible = true; drawMannequin(m, pts, p.s); return; }
-    const s = getSkel(used++), mat = mats[p.s]; s.g.visible = true;
-    s.joints.forEach((m, j) => { m.material = mat; m.visible = !!pts[j] && (isSmpl() ? j !== 15 : j >= 5); if (pts[j]) m.position.copy(pts[j]); });
-    s.bones.forEach((m, b) => { m.material = mat; const bc = BONES[b]; if (bc && pts[bc[0]] && pts[bc[1]]) placeCyl(m, pts[bc[0]], pts[bc[1]]); else m.visible = false; });
-    const hp = (isSmpl() ? [pts[15]] : pts.slice(0, 5)).filter(Boolean);
-    s.head.material = mat; s.head.visible = hp.length > 0;
-    if (hp.length) s.head.position.copy(hp.reduce((a, b) => a.add(b), new THREE.Vector3()).multiplyScalar(1 / hp.length));
-  });
-  for (let i = used; i < skels.length; i++) skels[i].g.visible = false;
-  for (let i = usedM; i < mannequins.length; i++) mannequins[i].g.visible = false;
-  // rackets
-  let ru = 0;
-  if (layer("racket")) F.r.forEach((r) => {
-    const o = getRacket(ru++); o.g.visible = true;
-    const RK = R.racket, mat = r.seen ? racketMat : racketGuess;
-    const u = Tdir(r.u).normalize(), w = T(r.w);
-    const butt = w.clone().addScaledVector(u, -RK.grip);
-    const throat = butt.clone().addScaledVector(u, RK.len - RK.head[0]);
-    o.handle.material = mat; o.head.material = mat;
-    placeCyl(o.handle, butt, throat);
-    o.head.position.copy(throat).addScaledVector(u, RK.head[0] / 2);
-    o.head.scale.set(RK.head[1], RK.head[0], RK.head[1]);
-    // face normal: from the swing (r.n, the head's motion across the shaft) when known, else toward the camera
-    const fwd = r.n ? Tdir(r.n) : Tdir(R.cam.fwd), n = fwd.clone().sub(u.clone().multiplyScalar(fwd.dot(u))).normalize();
-    o.head.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3().crossVectors(u, n), u, n));
-  });
-  for (let i = ru; i < rackets.length; i++) rackets[i].g.visible = false;
-  // player ground truth
-  let pu = 0;
-  if (layer("pgt") && F.pg) F.pg.forEach((q) => { const m = getPg(pu++); m.visible = true; const v = T([q[0], q[1], 0]); m.position.set(v.x, 0.012, v.z); });
-  for (let i = pu; i < pgRings.length; i++) pgRings[i].visible = false;
-  // shuttle
-  const x = F.x ? T(F.x) : null;
-  v2Ball.visible = layer("v2") && !!x; v2Shadow.visible = v2Ball.visible;
-  if (x) { v2Ball.position.copy(x); v2Shadow.position.set(x.x, 0.003, x.z); }
-  if (layer("v2")) setTrail(v2Trail, frame, "x"); else v2Trail.l.visible = false;
-  const g = F.g ? T(F.g) : null;
-  gtBall.visible = layer("gt") && !!g; if (g) gtBall.position.copy(g);
-  if (layer("gt")) setTrail(gtTrail, frame, "g"); else gtTrail.l.visible = false;
-  hitMarks.forEach((h) => h.lookAt(camera.position));
-  renderer.render(scene, camera);
-  drawOverlay(F);
-  // readouts
-  const k = curShot(frame), card = $("shotcard");
-  document.querySelectorAll("tr.shot").forEach((tr) => tr.classList.toggle("cur", +tr.dataset.k === k));
-  if (k >= 0 && frame <= R.shots[k].t1 + 1) {
-    const s = R.shots[k]; card.hidden = false;
-    card.innerHTML = `<span>shot ${k + 1}</span><span class="side" style="color:var(--${s.side})">${s.side} side</span><span>${s.speed.toFixed(0)} km/h</span><span>apex ${s.apex.toFixed(2)} m</span>` +
-      (x && g ? `<span style="color:var(--ink-dim)">err ${x.distanceTo(g).toFixed(2)} m</span>` : "");
-  } else card.hidden = true;
-  $("clock").textContent = `${(frame / FPS).toFixed(2)}s · ${frame + 1}/${R.n}`;
-  scrub.value = frame;
-}
-const oc = $("overlay"), ctx = oc.getContext("2d");
-function drawOverlay(F) {
-  ctx.clearRect(0, 0, oc.width, oc.height);
-  if (!layer("2d")) return;
-  const X = (u) => u[0] * oc.width, Y = (u) => u[1] * oc.height, s = oc.width / 960;
-  ctx.lineWidth = 1.6 * s;
-  if (layer("players")) F.p.forEach((p) => {
-    ctx.strokeStyle = p.s === "n" ? "#4fb3ff" : "#ff7a6b"; ctx.fillStyle = ctx.strokeStyle;
-    BONES.forEach(([a, b]) => { if (p.k[a] && p.k[b]) { ctx.beginPath(); ctx.moveTo(X(p.k[a]), Y(p.k[a])); ctx.lineTo(X(p.k[b]), Y(p.k[b])); ctx.stroke(); } });
-    p.k.forEach((k) => { if (k) { ctx.beginPath(); ctx.arc(X(k), Y(k), 1.8 * s, 0, 7); ctx.fill(); } });
-  });
-  if (layer("racket")) {
-    ctx.strokeStyle = "rgba(195,139,255,0.45)"; ctx.lineWidth = 1 * s;
-    F.rb.forEach((b) => ctx.strokeRect(X(b), Y(b.slice(1)), (b[2] - b[0]) * oc.width, (b[3] - b[1]) * oc.height));
-    ctx.strokeStyle = "#c38bff"; ctx.lineWidth = 3 * s;
-    F.r.forEach((r) => { ctx.globalAlpha = r.seen ? 1 : 0.4; ctx.beginPath(); ctx.moveTo(X(r.px[0]), Y(r.px[0])); ctx.lineTo(X(r.px[1]), Y(r.px[1])); ctx.stroke(); });
-    ctx.globalAlpha = 1; ctx.lineWidth = 1.6 * s;
+  function seekFromTL(e) {
+    if (!D) return; const r = tl.getBoundingClientRect();
+    const f = D.k0 + Math.round((e.clientX - r.left) / r.width * (D.k1 - D.k0 + 1));
+    video.pause(); video.currentTime = Math.max(0, (f - D.k0 + 0.5) / D.fps);
   }
-  if (F.d) { ctx.fillStyle = "#7fe0ff"; ctx.beginPath(); ctx.arc(X(F.d), Y(F.d), 3.2 * s, 0, 7); ctx.fill(); }
-  if (layer("v2") && F.xp) { ctx.strokeStyle = "#f2c94c"; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.arc(X(F.xp), Y(F.xp), 7 * s, 0, 7); ctx.stroke(); }
-}
+  let dragging = false;
+  tl.addEventListener("pointerdown", e => { dragging = true; tl.setPointerCapture(e.pointerId); seekFromTL(e); });
+  tl.addEventListener("pointermove", e => { if (dragging) seekFromTL(e); });
+  tl.addEventListener("pointerup", () => { dragging = false; });
 
-// ---------- transport ----------
-function seek(f) {
-  frame = Math.max(0, Math.min(R.n - 1, f)); clockT = frame / FPS;
-  if (video.readyState >= 1) { try { video.currentTime = (frame + 0.5) / FPS; } catch (e) {} }
-  draw();
-}
-function setPlaying(p) {
-  playing = p; $("play").textContent = p ? "❚❚" : "▶"; $("play").setAttribute("aria-label", p ? "Pause" : "Play");
-  if (p) { if (frame >= R.n - 1) seek(0); lastTs = null; video.play().catch(() => {}); requestAnimationFrame(tick); }
-  else video.pause();
-}
-function tick(ts) {
-  if (!playing) return;
-  if (!video.paused && video.readyState >= 2) clockT = video.currentTime;
-  else { if (lastTs !== null) clockT += (ts - lastTs) / 1000 * speed; }
-  lastTs = ts;
-  const f = Math.min(R.n - 1, Math.floor(clockT * FPS));
-  if (f !== frame) { frame = f; draw(); }
-  if (frame >= R.n - 1 || video.ended) { setPlaying(false); return; }
-  requestAnimationFrame(tick);
-}
-$("play").addEventListener("click", () => setPlaying(!playing));
-scrub.addEventListener("input", () => { if (playing) setPlaying(false); seek(+scrub.value); });
-document.querySelectorAll(".speeds button").forEach((b) => b.addEventListener("click", () => {
-  speed = +b.dataset.s; video.playbackRate = speed;
-  document.querySelectorAll(".speeds button").forEach((x) => x.classList.toggle("on", x === b));
-}));
-window.addEventListener("keydown", (e) => {
-  if (e.target.tagName === "SELECT" || !R) return;
-  if (e.code === "Space") { e.preventDefault(); setPlaying(!playing); }
-  if (e.code === "ArrowRight") { setPlaying(false); seek(frame + 1); }
-  if (e.code === "ArrowLeft") { setPlaying(false); seek(frame - 1); }
-});
-$("rally").addEventListener("change", (e) => loadRally(+e.target.value));
+  function setFrame(k) {
+    if (!D || k === frameNow) return; frameNow = k;
+    const X = byF[k];
+    ball.visible = drop.visible = shadow.visible = !!X;
+    for (const r of ["tv", "side"]) rays[r].visible = false;
+    if (X) {
+      const p = P(X[1], X[2], X[3]); ball.position.copy(p); ballMat.color.copy(X[4] ? YEL : GRY);
+      [["tv", X[5]], ["side", X[6]]].forEach(([r, seen]) => {
+        rays[r].visible = !!seen; if (!seen) return;
+        const c = P(...D.cams[r]); rays[r].geometry.setFromPoints([c, p.clone().sub(c).multiplyScalar(1.1).add(c)]);
+      });
+      drop.geometry.setFromPoints([p, P(X[1], X[2], 0.004)]); shadow.position.copy(P(X[1], X[2], 0.004));
+    }
+    for (let i = 0; i < 4; i++) {
+      const pl = D.players[i], J = pl && pl.frames[k]; bones[i].visible = heads[i].visible = !!J; if (!J) continue;
+      const { tubes, balls } = bones[i].userData;
+      EDGES.forEach(([u, w], e) => {
+        const m = tubes[e]; m.visible = !!(J[u] && J[w]); if (!m.visible) return;
+        const a = P(...J[u]), b = P(...J[w]), d = b.clone().sub(a), len = d.length();
+        if (len < 1e-4) { m.visible = false; return; }
+        m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(UP, d.divideScalar(len)); m.scale.set(boneR[e], len, boneR[e]);
+      });
+      balls.forEach((m, j) => { m.visible = jointR[j] > 0 && !!J[j]; if (m.visible) m.position.copy(P(...J[j])); });
+      const hd = J[HEAD]; heads[i].visible = !!hd; if (hd) heads[i].position.copy(P(...hd));
+    }
+    for (let i = 0; i < 4; i++) {
+      const pl = D.players[i], J = pl && pl.frames[k], rk = pl && pl.rk && pl.rk[k];
+      rings[i].visible = showRk && !!(J && rk && (rk.grip || J[pl.hand])); if (!rings[i].visible) continue;
+      const col = RK_COL[rk.src] ?? 0xff8c28;
+      rings[i].userData.mats[0].color.setHex(col); rings[i].userData.mats[1].color.setHex(col);
+      // grip at the racket hand, pointing along the (gap-filled, smoothed) direction to the detected racket head
+      const y = P(...rk.dir).normalize(), w = rk.grip ? P(...rk.grip).sub(y.clone().multiplyScalar(RK_BUTT)) : P(...J[pl.hand]);
+      let z = cam.position.clone().sub(w); z.sub(y.clone().multiplyScalar(z.dot(y))).normalize();
+      const x = new THREE.Vector3().crossVectors(y, z);
+      rings[i].quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z)); rings[i].position.copy(w);
+    }
+    // teacher on/off
+    ball.visible = ball.visible && showT; drop.visible = drop.visible && showT; shadow.visible = shadow.visible && showT;
+    for (const r of ["tv", "side"]) rays[r].visible = rays[r].visible && showT;
+    for (let i = 0; i < 4; i++) { bones[i].visible = bones[i].visible && showT; heads[i].visible = heads[i].visible && showT; rings[i].visible = rings[i].visible && showT; }
+    const trailPts = (get, n) => { const pts = []; for (let q = k - n; q <= k; q++) { const r = get(q); if (r) pts.push(P(r[1], r[2], r[3])); } return pts; };
+    tTrail.visible = showT; if (showT) tTrail.geometry.setFromPoints(trailPts(q => byF[q], 12));
+    // student
+    const Sx = sByF[k];
+    sBall.visible = sDrop.visible = sTrail.visible = showS && !!Sx;
+    if (sBall.visible) { const p = P(Sx[1], Sx[2], Sx[3]); sBall.position.copy(p); sDrop.geometry.setFromPoints([p, P(Sx[1], Sx[2], 0.004)]); sTrail.geometry.setFromPoints(trailPts(q => sByF[q], 12)); }
+    const SP = D.student.players;
+    for (let i = 0; i < 4; i++) {
+      const pl = SP[i], J = showS && pl && pl.frames[k], g = sBody[i]; g.visible = !!J;
+      const rk = J && pl.rk && pl.rk[k]; g.userData.rkm.visible = showRk && !!rk;
+      if (!J) continue;
+      const EDG = pl.smpl ? PARENT.map((p, j) => [p, j]).filter(e => e[0] >= 0) : COCO;
+      g.userData.tubes.forEach((m, e) => { if (e < EDG.length) tube(m, P(...J[EDG[e][0]]), P(...J[EDG[e][1]]), 0.022); else m.visible = false; });
+      g.userData.head.position.copy(P(...J[pl.smpl ? 15 : 0]));
+      if (rk) placeRacket(g.userData.rkm, P(rk[0], rk[1], rk[2]), P(rk[3], rk[4], rk[5]));
+    }
+    const dk = D.student.dist[k];
+    const stuTxt = Sx ? `<br><span style="color:var(--stu)">●</span> student (TV only): x ${Sx[1].toFixed(2)} · y ${Sx[2].toFixed(2)} · height ${Sx[3].toFixed(2)} m`
+      + (dk !== undefined ? ` · <b>${(dk * 100).toFixed(0)} cm from the teacher's label</b>` : (X ? ` · ${(Math.hypot(Sx[1] - X[1], Sx[2] - X[2], Sx[3] - X[3]) * 100).toFixed(0)} cm from the teacher (unlabelled frame)` : "")) : "";
+    const seen = X ? [X[5] && "TV", X[6] && "side"].filter(Boolean) : [];
+    readout.innerHTML = (X
+      ? `frame <b>${k}</b> · teacher ${X[4] ? '<span class="pill lab">labelled</span>' : '<span class="pill uns">unsure, not a label</span>'}<br>`
+        + `<span style="color:var(--label)">●</span> teacher: x ${X[1].toFixed(2)} · y ${X[2].toFixed(2)} · <b>height ${X[3].toFixed(2)} m</b><br>`
+        + `detected by: ${seen.length ? seen.join(" + ") : "neither camera (filled in by physics)"}`
+      : `frame <b>${k}</b> · outside the teacher's flight (before the serve or after the rally)`) + stuTxt;
+    drawTL();
+  }
 
-fetch("data.json").then((r) => r.json()).then((d) => {
-  d.sort((a, b) => a.metrics.err_median - b.metrics.err_median); DATA = d; $("loading").remove();
-  $("rally").innerHTML = d.map((r, i) => `<option value="${i}">${r.id} · ${r.metrics.err_median.toFixed(2)} m median</option>`).join("");
-  resize(); applyOrbit(); loadRally(0);
-}).catch(() => { $("loading").textContent = "Could not load the rally data. Reload the page to try again."; });
+  const views = {
+    orbit: () => [P(W + 9, -5, 7), P(W / 2, NET, 1)],
+    tv: () => [P(...D.cams.tv), P(W / 2, NET - 1, 0)],
+    side: () => [P(...D.cams.side), P(W / 2 - 3, NET, 1)],
+    p1: () => [P(...D.cams.p1), P(W / 2 - 1, NET - 3.5, 0.6)],
+    p2: () => [P(...D.cams.p2), P(W / 2 - 1, NET + 3.5, 0.6)],
+    top: () => [P(W / 2, NET + 0.01, 22), P(W / 2, NET, 0)],
+    end: () => [P(-7, NET, 1.6), P(W / 2, NET, 1.4)],
+  };
+  function setView(name) {
+    const [pos, tgt] = views[name](); cam.position.copy(pos); ctl.target.copy(tgt);
+    cam.fov = name === "tv" ? 28 : name === "side" ? 62 : name[0] === "p" ? 40 : 45; cam.updateProjectionMatrix(); ctl.update();
+    for (const b of document.querySelectorAll("#views button[data-v]")) b.classList.toggle("on", b.dataset.v === name);
+  }
+  document.getElementById("views").addEventListener("click", e => { if (e.target.dataset.v) setView(e.target.dataset.v); });
+
+  // rackets on/off: the 3D rackets, and the video swaps to a copy rendered without them (same timing)
+  const vsrc = uid => `v/${uid}.mp4`;
+  const rkbtn = document.getElementById("rkbtn");
+  rkbtn.addEventListener("click", () => {
+    showRk = !showRk; rkbtn.classList.toggle("on", showRk); rkbtn.setAttribute("aria-pressed", showRk);
+    const k = frameNow; frameNow = -1; setFrame(k);
+  });
+  for (const [id, set] of [["tbtn", v => showT = v], ["sbtn", v => showS = v]]) {
+    const b = document.getElementById(id);
+    b.addEventListener("click", () => { const on = !b.classList.contains("on"); set(on); b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); const k = frameNow; frameNow = -1; setFrame(k); });
+  }
+  async function load(uid) {
+    const r = await fetch(`d/${uid}.json`); D = await r.json(); byF = {};
+    for (const row of D.path) byF[row[0]] = row;
+    sByF = {}; for (const row of D.student.path) sByF[row[0]] = row;
+    D.players.forEach(racketTrack);
+    const seen = [0, 0];
+    D.players.forEach((pl, i) => { const c = TEAM[pl.side][seen[pl.side]++ % 2]; bones[i].material.color.setHex(c); });
+    for (let i = D.players.length; i < 4; i++) bones[i].visible = heads[i].visible = rings[i].visible = false;
+    for (const k of ["tv", "side", "p1", "p2"]) { if (!D.cams[k]) { camMarks[k].visible = camMarks[k].userData.label.visible = false; continue; } camMarks[k].visible = camMarks[k].userData.label.visible = true; const c = P(...D.cams[k]); camMarks[k].position.copy(c); camMarks[k].userData.label.position.copy(c.clone().add(new THREE.Vector3(0, 0.6, 0))); }
+    const st = D.stats; document.getElementById("tlstat").textContent = `teacher: ${Math.round(D.conf_frac * 100)}% of flight frames labelled, ${D.hits.length} sure hits · student: shuttle median ${st.med_cm} cm from the labels, ${st.hits_match} of ${st.hits_t} hits found (${st.hits_s} predicted)` + (st.body_cm ? `, bodies ${st.body_cm[0]} cm from the teacher's` : "");
+    frameNow = -1; video.src = vsrc(uid); setFrame(D.k0);
+  }
+  function tick() {
+    if (D) setFrame(D.k0 + Math.min(D.k1 - D.k0, Math.max(0, Math.floor(video.currentTime * D.fps))));
+    ctl.update(); renderer.render(scene, cam); requestAnimationFrame(tick);
+  }
+  function resize() { const w = box.clientWidth, h = Math.round(w * 11 / 16); renderer.setSize(w, h, false); renderer.domElement.style.width = "100%"; renderer.domElement.style.height = "auto"; cam.aspect = w / h; cam.updateProjectionMatrix(); drawTL(); }
+  new ResizeObserver(resize).observe(box);
+
+  const rsel = document.getElementById("rsel");
+  for (const r of R) { const o = document.createElement("option"); o.value = r.uid; o.textContent = `${r.uid} · ${r.secs}s · ${r.players === 4 ? "doubles" : "singles"} · shuttle ${r.med_cm} cm · bodies ${r.body ?? "–"} cm · hits ${r.hm}/${r.hits}`; rsel.appendChild(o); }
+  const pick = uid => { rsel.value = uid; document.getElementById("rcount").textContent = `rally ${R.findIndex(r => r.uid === uid) + 1} of ${R.length}`; load(uid); };
+  rsel.onchange = () => pick(rsel.value);
+  const step = d => { const i = R.findIndex(r => r.uid === rsel.value); pick(R[(i + d + R.length) % R.length].uid); };
+  document.getElementById("rprev").onclick = () => step(-1); document.getElementById("rnext").onclick = () => step(1);
+  const q = location.hash.slice(1); const start = R.find(r => r.uid === q) ? q : R[0].uid;
+  rsel.value = start; document.getElementById("rcount").textContent = `rally ${R.findIndex(r => r.uid === start) + 1} of ${R.length}`;
+  load(start).then(() => setView("orbit"));
+  resize(); tick();
+})();
 </script>
+
+</body></html>
