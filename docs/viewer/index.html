@@ -1,396 +1,589 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
-<title>Teacher and Student</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Birdseye Rally Viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: 3D scene (left, large) beside the synced TV + side video (right, stacked); confidence timeline under both. */
-:root {
-  --bg: #f2f4f1; --panel: #ffffff; --fg: #16201b; --muted: #5b6861; --rule: #d5dcd6; --chip: #e5ebe6;
-  --label: #2f6fd6; --unsure: #8d958f; --hit: #d33a2c; --tv: #9b59d0; --side: #e0702f; --stu: #b88a00; --good: #2f9e55; --mid: #d9a21b; --bad: #d33a2c;
-  --display: "Archivo", "Helvetica Neue", Arial, sans-serif; --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; --mono: "IBM Plex Mono", Consolas, monospace;
-}
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #0f1512; --panel: #172019; --fg: #e4ebe6; --muted: #97a59c; --rule: #29342d; --chip: #212b25;
-  --label: #5a9cff; --unsure: #8d958f; --hit: #f0645a; --tv: #c77dff; --side: #f08a4b; --stu: #f2c200; --good: #4cc276; --mid: #f0c040; --bad: #f0645a; color-scheme: dark } }
-:root[data-theme="dark"] {
-  --bg: #0f1512; --panel: #172019; --fg: #e4ebe6; --muted: #97a59c; --rule: #29342d; --chip: #212b25;
-  --label: #5a9cff; --unsure: #8d958f; --hit: #f0645a; --tv: #c77dff; --side: #f08a4b; --stu: #f2c200; --good: #4cc276; --mid: #f0c040; --bad: #f0645a; color-scheme: dark }
-body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--body); }
-.wrap { max-width: 1400px; margin: 0 auto; padding-block: 24px 48px;
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 16px; }
-h1 { font: 800 clamp(24px, 3vw, 32px)/1.15 var(--display); margin: 0; text-wrap: balance; }
-p { margin: 0; max-width: 80ch; color: var(--muted); }
-.views { display: flex; flex-wrap: wrap; gap: 6px; }
-.picker { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font: 13px var(--mono); }
-.picker select { font: 600 13px var(--mono); padding: 6px 8px; border-radius: 6px; border: 1px solid var(--rule); background: var(--panel); color: var(--fg); max-width: 100%; }
-#rcount { color: var(--muted); }
-.hint { position: absolute; left: 10px; bottom: 10px; font: 12px var(--mono); color: #c8d2cc; background: rgba(0,0,0,.45); padding: 3px 8px; border-radius: 4px; pointer-events: none; }
-button { font: 600 12.5px var(--mono); background: var(--panel); color: var(--fg); border: 1px solid var(--rule); border-radius: 6px; padding: 6px 10px; cursor: pointer; }
-button:focus-visible { outline: 2px solid var(--tv); outline-offset: 2px; }
-.tabs button[aria-selected="true"], .views button.on { background: var(--fg); color: var(--bg); border-color: var(--fg); }
-.tabs button small { font-weight: 400; opacity: .7; margin-left: 6px; }
-.viewer { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 12px; align-items: start; }
-@media (max-width: 860px) { .viewer { grid-template-columns: 1fr; } }
-.pane { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; min-width: 0; display: grid; }
-#three { position: relative; width: 100%; aspect-ratio: 16/11; max-width: 100%; background: #0f1412; touch-action: none; }
-#three canvas { display: block; position: absolute; inset: 0; width: 100% !important; height: 100% !important; }
-.views { padding: 10px; border-top: 1px solid var(--rule); }
-video { width: 100%; max-width: 100%; aspect-ratio: 1280/720; background: #000; display: block; }
-.readout { padding: 10px 12px; font: 13px/1.7 var(--mono); border-top: 1px solid var(--rule); min-height: 4.6em; }
-.pill { display: inline-block; padding: 1px 7px; border-radius: 4px; font-weight: 600; }
-.pill.lab { background: var(--label); color: #ffffff; } .pill.uns { background: var(--chip); color: var(--muted); }
-.tl { padding: 10px 12px 12px; display: grid; gap: 6px; }
-.tl .cap { font: 12px var(--mono); color: var(--muted); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-#tl { width: 100%; height: 78px; display: block; cursor: pointer; touch-action: none; }
-.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); }
-.legend span { display: inline-flex; align-items: center; gap: 7px; }
-.legend i { display: inline-block; width: 18px; height: 4px; border-radius: 2px; }
-.legend i.d { width: 10px; height: 10px; border-radius: 50%; }
-</style>
+  :root {
+    --bg: #0b1016; --panel: #121a23; --panel-2: #17212c; --line: #243241; --ink: #e8eef4; --ink-2: #9fb0c0;
+    --ink-3: #6b7d8f; --gold: #ffd166; --near: #ff7a59; --near-2: #ffb199; --far: #4cc9f0; --far-2: #a3e4f7;
+    --accent: #ffd166; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body { font: 14px/1.5 Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1480px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px));
+          padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px; }
+  header { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+  header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin: 0; }
+  header h1 span { color: var(--gold); }
+  header p { margin: 0; color: var(--ink-2); max-width: 70ch; }
+  header a { color: var(--ink-2); }
+  .rallies { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 12px; scrollbar-width: thin; }
+  .rally { flex: 0 0 auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px;
+           color: var(--ink-2); cursor: pointer; text-align: left; font: inherit; min-width: 150px; }
+  .rally b { display: block; color: var(--ink); font: 500 13px "JetBrains Mono", ui-monospace, monospace; }
+  .rally small { font-size: 12px; }
+  .rally.on { border-color: var(--gold); background: var(--panel-2); }
+  .rally.on b { color: var(--gold); }
+  .main { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 12px; }
+  @media (max-width: 1100px) { .main { grid-template-columns: minmax(0, 1fr); } }
 
+  .stage { position: relative; background: #070b10; border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+           aspect-ratio: 16 / 9.5; min-height: 320px; }
+  .stage canvas { display: block; width: 100%; height: 100%; }
+  .hud { position: absolute; left: 12px; top: 10px; display: flex; gap: 6px; flex-wrap: wrap; pointer-events: none; }
+  .chip { background: rgba(10, 16, 22, .72); border: 1px solid rgba(255,255,255,.08); border-radius: 999px; padding: 3px 10px;
+          font: 500 12px "JetBrains Mono", ui-monospace, monospace; color: var(--ink-2); backdrop-filter: blur(6px); }
+  .chip b { color: var(--ink); font-weight: 500; }
+  .cams { position: absolute; left: 10px; right: 10px; bottom: 10px; display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+  .cams button, .ctl button, .ctl select { background: rgba(18, 26, 35, .85); color: var(--ink-2); border: 1px solid var(--line);
+          border-radius: 8px; padding: 5px 10px; font: 500 12px Inter, sans-serif; cursor: pointer; backdrop-filter: blur(6px); }
+  .cams button.on, .ctl button.on { color: #1b1300; background: var(--gold); border-color: var(--gold); }
+  .side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px; min-width: 0; }
+  .card h2 { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 8px; }
+  .vid { position: relative; border-radius: 10px; overflow: hidden; background: #000; aspect-ratio: 16 / 9; }
+  .vid video, .vid canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .vid canvas { pointer-events: none; }
+  .note { color: var(--ink-3); font-size: 12px; margin: 8px 0 0; }
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .stat { background: var(--panel-2); border-radius: 10px; padding: 8px 10px; min-width: 0; }
+  .stat .v { font: 600 20px "JetBrains Mono", ui-monospace, monospace; color: var(--ink); }
+  .stat .v small { font-size: 12px; color: var(--ink-3); font-weight: 400; }
+  .stat .k { font-size: 11px; color: var(--ink-3); }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); margin-top: 10px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .bar { margin-top: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; }
+  .ctl { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .ctl .play { width: 40px; height: 34px; font-size: 15px; color: #1b1300; background: var(--gold); border-color: var(--gold); }
+  .ctl .t { font: 500 12px "JetBrains Mono", ui-monospace, monospace; color: var(--ink-2); margin-left: auto; }
+  .tl { position: relative; height: 34px; margin-top: 10px; cursor: pointer; touch-action: none; }
+  .tl .track { position: absolute; left: 0; right: 0; top: 14px; height: 6px; border-radius: 3px; background: #1d2935; }
+  .tl .fill { position: absolute; left: 0; top: 14px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #6c5a2a, var(--gold)); }
+  .tl .hit { position: absolute; top: 6px; width: 2px; height: 22px; border-radius: 1px; background: var(--ink-3); transform: translateX(-1px); }
+  .tl .hit.near { background: var(--near); } .tl .hit.far { background: var(--far); }
+  .tl .knob { position: absolute; top: 9px; width: 16px; height: 16px; border-radius: 50%; background: var(--ink); transform: translateX(-8px);
+              box-shadow: 0 0 0 4px rgba(255, 209, 102, .25); }
+  .keys { color: var(--ink-3); font-size: 12px; margin-top: 8px; }
+  kbd { font: 500 11px "JetBrains Mono", monospace; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; color: var(--ink-2); }
+  .loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ink-3); font: 500 13px "JetBrains Mono", monospace; }
+  .main > * { min-width: 0; }
+  @media (max-width: 700px) {
+    .stage { aspect-ratio: 4 / 5; }
+    .cams { left: 8px; right: 8px; bottom: 8px; justify-content: flex-start; }
+    .cams button { padding: 4px 7px; font-size: 11px; }
+    .keys { display: none; }
+    .stats .stat .v { font-size: 17px; }
+  }
+</style>
+</head>
+<body>
 <div class="wrap">
-  <h1>Teacher and student, in 3D</h1>
-  <p><b>Student</b> (gold shuttle, solid bodies, orange rackets): one network that sees <i>only the TV feed</i>, trained to reproduce the teacher. <b>Teacher</b> (everything in blue): fitted from all four cameras: TV, the fixed side camera and both player cameras. It labels only what it is sure of: bright blue frames are labels, grey-blue ones are left out. These rallies were kept out of the student's training, so it has never seen their labels. Play or scrub the video, or click the timeline, and the 3D scene follows. Drag to orbit, scroll to zoom.</p>
-  <div class="picker"><button id="rprev" aria-label="previous rally">←</button><select id="rsel" aria-label="rally"></select><button id="rnext" aria-label="next rally">→</button><span id="rcount"></span></div>
-  <div class="viewer">
-    <div class="pane">
-      <div id="three"><div class="hint">drag to orbit · scroll to zoom · right-drag to pan</div></div>
-      <div class="views" id="views">
-        <button data-v="orbit">overview</button><button data-v="tv">from TV camera</button><button data-v="side">from side camera</button><button data-v="p1">from player cam 1</button><button data-v="p2">from player cam 2</button><button data-v="top">top-down</button><button data-v="end">along the net</button><button id="rkbtn" class="on" aria-pressed="true">rackets</button><button id="tbtn" class="on" aria-pressed="true">teacher</button><button id="sbtn" class="on" aria-pressed="true">student</button>
+  <header>
+    <h1>Birdseye <span>·</span> rally viewer</h1>
+    <p>Every player's body, racket and the shuttle in 3D, from the broadcast video alone. Rallies from four matches the
+      network never trained on. <a href="../">Project page</a> · <a href="../teacher/">teacher vs student</a></p>
+  </header>
+
+  <div class="rallies" id="rallies"></div>
+
+  <div class="main">
+    <div>
+      <div class="stage" id="stage">
+        <div class="loading" id="loading">loading…</div>
+        <div class="hud" id="hud"></div>
+        <div class="cams" id="cams"></div>
+      </div>
+      <div class="bar">
+        <div class="ctl">
+          <button class="play" id="play" title="Play / pause (space)">▶</button>
+          <select id="speed" title="Speed">
+            <option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option>
+          </select>
+          <button id="tTrail" class="on" title="Shuttle trail">trail</button>
+          <button id="tFlight" title="Whole shuttle flight">flight path</button>
+          <button id="tDrop" class="on" title="Shuttle height line and floor shadow">height</button>
+          <span class="t" id="tcode">0.00 s · frame 0</span>
+        </div>
+        <div class="tl" id="tl"><div class="track"></div><div class="fill" id="fill"></div><div id="ticks"></div><div class="knob" id="knob"></div></div>
+        <div class="keys"><kbd>space</kbd> play · <kbd>←</kbd><kbd>→</kbd> frame · <kbd>1</kbd>–<kbd>6</kbd> cameras · drag to orbit, scroll to zoom</div>
       </div>
     </div>
-    <div class="pane">
-      <video id="vid" controls muted playsinline preload="auto"></video>
-      <div class="readout" id="readout">loading…</div>
+
+    <div class="side">
+      <div class="card">
+        <h2>Broadcast video · the only input</h2>
+        <div class="vid"><video id="video" muted playsinline preload="auto"></video><canvas id="overlay"></canvas></div>
+        <div class="ctl" style="margin-top:8px">
+          <button id="tOverlay" class="on" title="Draw the 3D result from the broadcast camera">3D over the video</button>
+        </div>
+        <p class="note">The overlay is the 3D scene re-drawn from the calibrated broadcast camera, so it lines up with the
+          picture wherever the depth is right in the image; the other views show the depth itself.</p>
+      </div>
+      <div class="card">
+        <h2>This rally, checked from the side camera</h2>
+        <div class="stats" id="stats"></div>
+        <p class="note">Median distance from the 3D result to the fixed side camera's sight-lines, a camera the network
+          never sees. Lower is better.</p>
+        <p class="note">Shown for display: a light 3-frame smoothing, and at each detected hit the hitter's arm eased so
+          the racket meets the shuttle. The numbers above are from the network's raw output.</p>
+        <div class="legend">
+          <span><i style="background:#ff6b4a"></i><i style="background:#f4a261;margin-left:-4px"></i>near-side team</span>
+          <span><i style="background:#3cc8f0"></i><i style="background:#8c9bff;margin-left:-4px"></i>far-side team</span>
+          <span><i style="background:var(--gold)"></i>shuttle · hits</span>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="pane tl">
-    <div class="cap"><span>top: teacher (blue = labelled, grey = unsure; red ticks = sure hits, grey ticks = hits it abstains on) · bottom: student (distance to the teacher on labelled frames: green &lt; 25 cm, amber &lt; 60 cm, red beyond; gold ticks = student hits)</span><span id="tlstat"></span></div>
-    <canvas id="tl"></canvas>
-  </div>
-  <div class="legend">
-    <span><i class="d" style="background:var(--label)"></i>teacher shuttle, labelled</span><span><i class="d" style="background:var(--unsure)"></i>teacher shuttle, unsure (not a label)</span>
-    <span><i class="d" style="background:var(--stu)"></i>student shuttle (TV only)</span><span><i style="background:#ff6f61"></i>student, near side players</span><span><i style="background:#ffc23d"></i>student, far side players</span><span><i style="background:#ff8c28"></i>student rackets</span>
-    <span><i style="background:var(--label)"></i>teacher players and rackets</span>
-    <span><i style="background:var(--tv)"></i>TV camera ray (when it detects the shuttle)</span><span><i style="background:var(--side)"></i>side camera ray</span>
-  </div>
-  <p>Teacher players are VIMO (TRAM) 3D bodies placed on court by all four cameras, with rackets fitted to the racket boxes seen in every camera; the teacher's shuttle is a physical flight per shot (drag and gravity) through every camera's detections, with hits checked by a video hit model. The student predicts all of this from the TV feed alone, frame by frame, in a single network pass, with no per-rally fitting.</p>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-const R = [{"uid": "sf_0541", "secs": 14.0, "players": 2, "med_cm": 15.6, "body": 13.9, "hm": 13, "hits": 13}, {"uid": "d1026_0085", "secs": 19.3, "players": 2, "med_cm": 16.9, "body": 12.3, "hm": 19, "hits": 19}, {"uid": "sf_0174", "secs": 8.8, "players": 2, "med_cm": 18.5, "body": 11.6, "hm": 7, "hits": 7}, {"uid": "d1026_0554", "secs": 5.8, "players": 2, "med_cm": 20.7, "body": 11.6, "hm": 6, "hits": 6}, {"uid": "d1026_0258", "secs": 10.1, "players": 2, "med_cm": 21.3, "body": 16.3, "hm": 10, "hits": 10}, {"uid": "sf_0702", "secs": 9.3, "players": 4, "med_cm": 21.2, "body": 15.8, "hm": 14, "hits": 15}]; const R_UNUSED = [{"uid": "sf_0076", "hits": 4, "conf": 0.793, "secs": 5.9}, {"uid": "sf_0105", "hits": 11, "conf": 0.744, "secs": 12.4}, {"uid": "sf_0153", "hits": 8, "conf": 0.638, "secs": 10.1}, {"uid": "sf_0062", "hits": 10, "conf": 0.625, "secs": 13.9}, {"uid": "sf_0559", "hits": 11, "conf": 0.593, "secs": 15.7}, {"uid": "sf_0283", "hits": 5, "conf": 0.59, "secs": 6.9}, {"uid": "sf_0022", "hits": 3, "conf": 0.562, "secs": 5.5}, {"uid": "sf_0026", "hits": 9, "conf": 0.56, "secs": 18.7}, {"uid": "sf_0570", "hits": 12, "conf": 0.559, "secs": 15.7}, {"uid": "sf_0418", "hits": 47, "conf": 0.556, "secs": 47.1}, {"uid": "sf_0529", "hits": 7, "conf": 0.545, "secs": 10.5}, {"uid": "sf_0595", "hits": 4, "conf": 0.517, "secs": 12.9}, {"uid": "sf_0593", "hits": 16, "conf": 0.509, "secs": 26.6}, {"uid": "sf_0520", "hits": 7, "conf": 0.503, "secs": 11.9}, {"uid": "sf_0260", "hits": 10, "conf": 0.473, "secs": 11.7}, {"uid": "sf_0280", "hits": 8, "conf": 0.459, "secs": 9.5}, {"uid": "sf_0452", "hits": 11, "conf": 0.445, "secs": 20.0}, {"uid": "sf_0174", "hits": 5, "conf": 0.435, "secs": 11.7}, {"uid": "sf_0388", "hits": 4, "conf": 0.417, "secs": 9.0}, {"uid": "sf_0116", "hits": 5, "conf": 0.413, "secs": 9.3}, {"uid": "sf_0638", "hits": 3, "conf": 0.386, "secs": 5.1}, {"uid": "sf_0288", "hits": 11, "conf": 0.378, "secs": 12.3}, {"uid": "sf_0056", "hits": 7, "conf": 0.372, "secs": 17.5}, {"uid": "sf_0744", "hits": 7, "conf": 0.371, "secs": 17.1}, {"uid": "sf_0217", "hits": 10, "conf": 0.36, "secs": 17.1}, {"uid": "sf_0664", "hits": 2, "conf": 0.35, "secs": 4.6}, {"uid": "sf_0481", "hits": 4, "conf": 0.291, "secs": 8.5}, {"uid": "sf_0118", "hits": 4, "conf": 0.289, "secs": 6.6}, {"uid": "sf_0300", "hits": 7, "conf": 0.226, "secs": 11.1}, {"uid": "sf_0467", "hits": 2, "conf": 0.185, "secs": 8.9}];
-(function () {
-  const W = 6.1, L = 13.4, NET = 6.7, POST = 1.55;
-  const P = (x, y, z) => new THREE.Vector3(x, z, -y);
-  const PARENT = [-1, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 12, 13, 14, 16, 17, 18, 19, 20, 21];  // SMPL 24 joints
-  const EDGES = PARENT.map((p, j) => [p, j]).filter(e => e[0] >= 0), WRISTS = [20, 21], HEAD = 15;
-  const YEL = new THREE.Color(0x4f8ff7), GRY = new THREE.Color(0x5d6b80), TB = 0x4f8ff7;  // teacher: blue (labelled) / grey-blue (unsure)
-  const box = document.getElementById("three");
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const COURT_W = 6.1, COURT_L = 13.4, NET_Y = 6.7;
+  // court frame (x across, y along, z up, metres) -> three (x, y up, z towards the near baseline)
+  const V = (x, y, z) => new THREE.Vector3(x - COURT_W / 2, z, NET_Y - y);
+  const BONES = [[0,1],[0,2],[1,4],[2,5],[4,7],[5,8],[7,10],[8,11],[0,3],[3,6],[6,9],[9,12],[12,15],[9,13],[9,14],
+                 [13,16],[14,17],[16,18],[17,19],[18,20],[19,21],[20,22],[21,23],[16,17],[1,2]];
+  const RAD = {"0-1":.075,"0-2":.075,"1-4":.07,"2-5":.07,"4-7":.052,"5-8":.052,"7-10":.042,"8-11":.042,"0-3":.12,"3-6":.125,
+               "6-9":.13,"9-12":.06,"12-15":.05,"9-13":.07,"9-14":.07,"13-16":.06,"14-17":.06,"16-18":.048,"17-19":.048,
+               "18-20":.04,"19-21":.04,"20-22":.035,"21-23":.035,"16-17":.075,"1-2":.085};
+
+  // ---------- renderer, scene ----------
+  const stage = $("stage");
   const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1)); box.prepend(renderer.domElement);
-  const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0f1412);
-  const cam = new THREE.PerspectiveCamera(45, 16 / 11, 0.05, 200);
-  const ctl = new THREE.OrbitControls(cam, renderer.domElement); ctl.enableDamping = true;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  stage.prepend(renderer.domElement);
 
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(W + 6, L + 8), new THREE.MeshBasicMaterial({ color: 0x1f5a3a }));
-  floor.rotation.x = -Math.PI / 2; floor.position.copy(P(W / 2, L / 2, -0.002)); scene.add(floor);
-  const segs = [];
-  for (const x of [0, 0.46, W - 0.46, W]) segs.push([x, 0, x, L]);
-  for (const y of [0, 0.76, NET - 1.98, NET + 1.98, L - 0.76, L]) segs.push([0, y, W, y]);
-  segs.push([W / 2, 0, W / 2, NET - 1.98], [W / 2, NET + 1.98, W / 2, L]);
-  const lp = []; for (const [a, b, c, d] of segs) lp.push(P(a, b, 0.003), P(c, d, 0.003));
-  scene.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(lp), new THREE.LineBasicMaterial({ color: 0xf2f2f2 })));
-  const net = new THREE.Mesh(new THREE.PlaneGeometry(W, 0.76), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.18, side: THREE.DoubleSide }));
-  net.position.copy(P(W / 2, NET, POST - 0.38)); scene.add(net);
-  scene.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints([P(0, NET, 0), P(0, NET, POST), P(W, NET, 0), P(W, NET, POST), P(0, NET, POST), P(W, NET, POST)]), new THREE.LineBasicMaterial({ color: 0xffffff })));
-  const gp = []; for (let z = 1; z <= 6; z++) gp.push(P(-0.5, L + 0.6, z), P(W + 0.5, L + 0.6, z));
-  scene.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(gp), new THREE.LineBasicMaterial({ color: 0x33403a })));
-  function label(text, color) {
-    const c = document.createElement("canvas"); c.width = 256; c.height = 64; const g = c.getContext("2d");
-    g.font = "600 30px IBM Plex Mono, monospace"; g.fillStyle = color; g.fillText(text, 6, 42);
-    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false })); s.scale.set(2.4, 0.6, 1); return s;
-  }
-  for (let z = 1; z <= 6; z++) { const s = label(z + " m", "#6f7f77"); s.position.copy(P(-1.6, L + 0.6, z)); s.scale.set(1.6, 0.4, 1); scene.add(s); }
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x070b10);
+  scene.fog = new THREE.Fog(0x070b10, 30, 75);
 
-  const camMarks = {}, rays = {};
-  for (const [k, col, txt] of [["tv", 0xc77dff, "TV camera"], ["side", 0xf08a4b, "side camera"], ["p1", 0xff7ab8, "player cam 1"], ["p2", 0x5fd0c0, "player cam 2"]]) {
-    camMarks[k] = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.35, 0.35), new THREE.MeshBasicMaterial({ color: col })); scene.add(camMarks[k]);
-    const s = label(txt, "#" + col.toString(16)); camMarks[k].userData.label = s; scene.add(s);
-    rays[k] = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.8 })); scene.add(rays[k]);
+  const camera = new THREE.PerspectiveCamera(40, 16 / 9, 0.05, 200);
+  camera.position.set(9, 7, 13);
+  camera.layers.enableAll(); camera.layers.disable(3);
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 0.8, 0);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.maxPolarAngle = Math.PI * 0.495;
+  controls.minDistance = 2; controls.maxDistance = 45;
+
+  const hemi = new THREE.HemisphereLight(0xcfe3ff, 0x0b1a12, 0.5); scene.add(hemi);
+  const sun = new THREE.DirectionalLight(0xffffff, 0.95);
+  sun.position.set(-6, 14, 6);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  Object.assign(sun.shadow.camera, { left: -11, right: 11, top: 11, bottom: -11, near: 1, far: 40 });
+  sun.shadow.bias = -0.0004;
+  scene.add(sun);
+  const rim = new THREE.DirectionalLight(0x88b8ff, 0.35);
+  rim.position.set(8, 6, -10);
+  scene.add(rim);
+  for (const l of [hemi, sun, rim]) l.layers.enableAll();
+
+  // ---------- arena ----------
+  const STATIC = 1, DYN = 2; // layers: the overlay camera only draws DYN
+  function stat(o) { o.layers.set(STATIC); return o; }
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(220, 220), new THREE.MeshStandardMaterial({ color: 0x0c1924, roughness: 0.95 }));
+  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(stat(floor));
+  const mat = new THREE.Mesh(new THREE.PlaneGeometry(COURT_W + 4, COURT_L + 6),
+    new THREE.MeshStandardMaterial({ color: 0x14513a, roughness: 0.85 }));
+  mat.rotation.x = -Math.PI / 2; mat.position.y = 0.002; mat.receiveShadow = true; scene.add(stat(mat));
+  const court = new THREE.Mesh(new THREE.PlaneGeometry(COURT_W, COURT_L), new THREE.MeshStandardMaterial({ color: 0x1a6a4a, roughness: 0.8 }));
+  court.rotation.x = -Math.PI / 2; court.position.y = 0.004; court.receiveShadow = true; scene.add(stat(court));
+  const lineMat = new THREE.MeshStandardMaterial({ color: 0xf4f7f6, roughness: 0.6 });
+  function line(x0, y0, x1, y1) {
+    const w = 0.04, len = Math.hypot(x1 - x0, y1 - y0);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(len + w, w), lineMat);
+    m.rotation.x = -Math.PI / 2;
+    m.rotation.z = Math.atan2(-(y1 - y0), x1 - x0);
+    const c = V((x0 + x1) / 2, (y0 + y1) / 2, 0.006);
+    m.position.copy(c); m.receiveShadow = true; scene.add(stat(m));
   }
-  const triPts = new THREE.Points(new THREE.BufferGeometry(), new THREE.PointsMaterial({ color: 0xf4f4f4, size: 0.05 })); scene.add(triPts);
-  const ballMat = new THREE.MeshBasicMaterial({ color: 0xf2c200 });
-  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 12), ballMat); scene.add(ball);
-  // Claude's hand reconstruction (shuttle marked by eye in TV + side, physical flight per shot), where present
-  const handBall = new THREE.Mesh(new THREE.SphereGeometry(0.075, 16, 12), new THREE.MeshBasicMaterial({ color: 0x35d06a })); handBall.visible = false; scene.add(handBall);
-  let handF = {};
-  // Claude's hand-marked players: head, hips and both feet, joined by lines (green)
-  const HG = 0x35d06a, handMat = new THREE.LineBasicMaterial({ color: HG }), handDot = new THREE.MeshBasicMaterial({ color: HG });
-  const handPl = [0, 1, 2, 3].map(() => {
-    const g = new THREE.Group(), lines = [0, 1, 2].map(() => { const l = new THREE.Line(new THREE.BufferGeometry(), handMat); g.add(l); return l; });
-    const dots = [0.11, 0.06, 0.05, 0.05].map(r => { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 8), handDot); g.add(m); return m; });
-    g.visible = false; scene.add(g); return { g, lines, dots };
-  });
-  const drop = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.4 })); scene.add(drop);
-  const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.1, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45 }));
-  shadow.rotation.x = -Math.PI / 2; scene.add(shadow);
-  const bones = [], heads = [], shafts = [], rings = [];
-  const RK_SHAFT = 0.435, RK_HEAD_H = 0.23, RK_HEAD_W = 0.2, RK_BUTT = 0.07;  // the hand holds the grip 7 cm from its end
-  const RK_COL = [0xffd2a8, 0xff8c28, 0xff5a10, 0xffffff];  // racket: no camera sees it, one camera, two or more, at a hit (head on the shuttle)
-  const TEAM = [[0xff6f61, 0xffa79e], [0xffc23d, 0xffe08f]];  // near side, far side (two shades for partners)
-  // solid bodies: a shaded tube per SMPL bone (radius by body part) and a ball at every joint so the tubes join smoothly
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x334038, 0.75));
-  const sun = new THREE.DirectionalLight(0xffffff, 0.55); sun.position.set(4, 10, 6); scene.add(sun);
-  const BONE_R = { "0,3": 0.085, "3,6": 0.09, "6,9": 0.095, "9,12": 0.06, "12,15": 0.05, "0,1": 0.075, "0,2": 0.075, "9,13": 0.065, "9,14": 0.065,
-    "13,16": 0.06, "14,17": 0.06, "1,4": 0.068, "2,5": 0.068, "4,7": 0.05, "5,8": 0.05, "7,10": 0.035, "8,11": 0.035,
-    "16,18": 0.045, "17,19": 0.045, "18,20": 0.037, "19,21": 0.037, "20,22": 0.03, "21,23": 0.03 };
-  const boneR = EDGES.map(([u, w]) => 0.5 * (BONE_R[u + "," + w] ?? 0.04));
-  const jointR = new Array(24).fill(0); EDGES.forEach(([u, w], e) => { jointR[u] = Math.max(jointR[u], boneR[e]); jointR[w] = Math.max(jointR[w], boneR[e]); });
-  const TUBE = new THREE.CylinderGeometry(1, 1, 1, 12), BALL = new THREE.SphereGeometry(1, 12, 10), UP = new THREE.Vector3(0, 1, 0);
-  for (let i = 0; i < 4; i++) {
-    const g = new THREE.Group(), bmat = new THREE.MeshLambertMaterial({ color: 0xffffff });
-    g.userData.tubes = EDGES.map(() => { const m = new THREE.Mesh(TUBE, bmat); g.add(m); return m; });
-    g.userData.balls = jointR.map(r => { const m = new THREE.Mesh(BALL, bmat); m.scale.setScalar(r); m.visible = r > 0; g.add(m); return m; });
-    g.material = bmat; bones.push(g); scene.add(g);
-    heads.push(new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 12), bmat)); scene.add(heads[i]);
-    rings.push(racketGroup(0xff8c28)); shafts.push(null);
-  }
-  // a real badminton racket, fixed size: 0.665 m long, oval head ~0.23 x 0.20 m; grip at the wrist
-  function racketGroup(color) {
-    const rg = new THREE.Group(), mat = new THREE.MeshBasicMaterial({ color });
-    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.016, RK_SHAFT, 8), mat); shaft.position.y = RK_SHAFT / 2; rg.add(shaft);
-    const head = new THREE.Group(); head.position.y = RK_SHAFT + RK_HEAD_H / 2;
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.012, 8, 32), mat); head.add(rim);
-    head.add(new THREE.Mesh(new THREE.CircleGeometry(0.1, 32), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.3, side: THREE.DoubleSide })));
-    head.scale.set(RK_HEAD_W / 0.2, RK_HEAD_H / 0.2, 1); rg.add(head);
-    rg.userData.mats = [mat, head.children[1].material]; scene.add(rg); return rg;
-  }
-  function placeRacket(rg, gripPt, dir) {  // grip point (hand), unit direction grip -> head
-    const y = dir.clone().normalize(), w = gripPt.clone().sub(y.clone().multiplyScalar(RK_BUTT));
-    let z = cam.position.clone().sub(w); z.sub(y.clone().multiplyScalar(z.dot(y))).normalize();
-    const x = new THREE.Vector3().crossVectors(y, z);
-    rg.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z)); rg.position.copy(w);
+  const W = COURT_W, L = COURT_L;
+  line(0, 0, W, 0); line(0, L, W, L); line(0, 0, 0, L); line(W, 0, W, L);
+  line(0.46, 0, 0.46, L); line(W - 0.46, 0, W - 0.46, L);
+  line(0, 0.76, W, 0.76); line(0, L - 0.76, W, L - 0.76);
+  line(0, NET_Y - 1.98, W, NET_Y - 1.98); line(0, NET_Y + 1.98, W, NET_Y + 1.98);
+  line(W / 2, 0, W / 2, NET_Y - 1.98); line(W / 2, NET_Y + 1.98, W / 2, L);
+  // net
+  const netH = 1.524, postH = 1.55;
+  const netTex = (() => {
+    const c = document.createElement("canvas"); c.width = c.height = 64;
+    const g = c.getContext("2d"); g.clearRect(0, 0, 64, 64); g.strokeStyle = "rgba(20,20,24,0.9)"; g.lineWidth = 3;
+    g.strokeRect(0, 0, 64, 64);
+    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(W / 0.06, 0.76 / 0.06); return t;
+  })();
+  const net = new THREE.Mesh(new THREE.PlaneGeometry(W, 0.76),
+    new THREE.MeshBasicMaterial({ map: netTex, transparent: true, side: THREE.DoubleSide, depthWrite: false, opacity: 0.9 }));
+  net.position.set(0, netH - 0.38, 0); scene.add(stat(net));
+  const tape = new THREE.Mesh(new THREE.BoxGeometry(W, 0.075, 0.01), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 }));
+  tape.position.set(0, netH - 0.0375, 0); scene.add(stat(tape));
+  for (const sx of [-W / 2, W / 2]) {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, postH, 12), new THREE.MeshStandardMaterial({ color: 0xdfe6ea, metalness: 0.3, roughness: 0.4 }));
+    post.position.set(sx, postH / 2, 0); post.castShadow = true; scene.add(stat(post));
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.08, 20), new THREE.MeshStandardMaterial({ color: 0x2a3440, roughness: 0.6 }));
+    base.position.set(sx + Math.sign(sx) * 0.12, 0.04, 0); base.castShadow = true; scene.add(stat(base));
   }
 
-  // student shuttle (gold) + trail; thin blue stick figures and rackets: the teacher
-  const STU = 0xf2c200, COCO = [[0,1],[0,2],[1,3],[2,4],[5,6],[5,7],[7,9],[6,8],[8,10],[5,11],[6,12],[11,12],[11,13],[13,15],[12,14],[14,16]];
-  const sBall = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 12), new THREE.MeshBasicMaterial({ color: STU })); scene.add(sBall);
-  const sDrop = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: STU, transparent: true, opacity: 0.45 })); scene.add(sDrop);
-  const sTrail = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: STU })); scene.add(sTrail);
-  const tTrail = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: TB })); scene.add(tTrail);
-  const sMat = new THREE.MeshBasicMaterial({ color: TB, transparent: true, opacity: 0.85 });  // thin bodies: the teacher
-  const sBody = [0, 1, 2, 3].map(() => {
+  // ---------- players ----------
+  const unitCyl = new THREE.CylinderGeometry(1, 1, 1, 14, 1, true);
+  const unitSph = new THREE.SphereGeometry(1, 16, 12);
+  const UP = new THREE.Vector3(0, 1, 0);
+  function makePlayer(color) {
+    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.05 });
+    const skin = new THREE.MeshStandardMaterial({ color: 0xe8c3a8, roughness: 0.7 });
     const g = new THREE.Group();
-    g.userData.tubes = PARENT.map(() => { const m = new THREE.Mesh(TUBE, sMat); g.add(m); return m; });
-    g.userData.head = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 8), sMat); g.add(g.userData.head);
-    g.userData.rkm = racketGroup(TB);
-    scene.add(g); return g;
+    const bones = BONES.map(([a, b]) => {
+      const m = new THREE.Mesh(unitCyl, (a >= 18 || b >= 18) && !(a === 16 || a === 17) ? skin : mat);
+      m.castShadow = true; m.userData = { a, b, r: RAD[a + "-" + b] || 0.05 }; g.add(m); return m;
+    });
+    const joints = [];
+    for (let j = 0; j < 24; j++) {
+      if (j === 15) continue;
+      const r = Math.max(...BONES.filter(([a, b]) => a === j || b === j).map(([a, b]) => RAD[a + "-" + b] || 0.04));
+      const m = new THREE.Mesh(unitSph, j >= 20 ? skin : mat); m.scale.setScalar(r); m.castShadow = true;
+      m.userData = { j }; g.add(m); joints.push(m);
+    }
+    const head = new THREE.Mesh(unitSph, skin); head.scale.set(0.105, 0.125, 0.11); head.castShadow = true; g.add(head);
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.55),
+      new THREE.MeshStandardMaterial({ color: 0x1b1612, roughness: 0.9 }));
+    hair.scale.set(0.112, 0.13, 0.117); hair.castShadow = true; g.add(hair);
+    // racket: handle + frame (ellipse ring) + strings
+    const rk = new THREE.Group();
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.2, 10), new THREE.MeshStandardMaterial({ color: 0x222831, roughness: 0.5 }));
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.0045, 0.0045, 0.2, 8), new THREE.MeshStandardMaterial({ color: 0x9aa4ae, metalness: 0.6, roughness: 0.3 }));
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(1, 0.045, 8, 40), new THREE.MeshStandardMaterial({ color, metalness: 0.4, roughness: 0.35 }));
+    const strings = new THREE.Mesh(new THREE.CircleGeometry(1, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false }));
+    for (const o of [handle, shaft, ring]) o.castShadow = true;
+    rk.add(handle, shaft, ring, strings);
+    g.add(rk);
+    g.traverse((o) => o.layers.enable(DYN));
+    scene.add(g);
+    return { g, bones, joints, head, hair, rk, handle, shaft, ring, strings };
+  }
+
+  const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3(), tmpD = new THREE.Vector3(), tmpQ = new THREE.Quaternion();
+  function placeBone(m, a, b, r) {
+    tmpD.subVectors(b, a); const len = tmpD.length();
+    if (!(len > 1e-4)) { m.visible = false; return; }
+    m.visible = true;
+    m.position.addVectors(a, b).multiplyScalar(0.5);
+    m.scale.set(r, len, r);
+    m.quaternion.setFromUnitVectors(UP, tmpD.divideScalar(len));
+  }
+
+  // ---------- shuttle ----------
+  const shuttle = new THREE.Group();
+  const cork = new THREE.Mesh(new THREE.SphereGeometry(0.028, 16, 12), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x332a10, roughness: 0.4 }));
+  const skirt = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.085, 16, 1, true), new THREE.MeshStandardMaterial({ color: 0xfffbea, emissive: 0x403214, roughness: 0.6, side: THREE.DoubleSide }));
+  skirt.position.y = 0.055; skirt.rotation.x = Math.PI;
+  cork.castShadow = skirt.castShadow = true;
+  shuttle.add(cork, skirt);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: (() => {
+    const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d");
+    const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(255,220,120,0.9)"); gr.addColorStop(1, "rgba(255,200,80,0)");
+    g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })(), depthWrite: false, transparent: true }));
+  glow.scale.set(0.38, 0.38, 1);
+  shuttle.traverse((o) => o.layers.enable(DYN));
+  shuttle.add(glow); // main view only
+  const oDot = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffd166 }));
+  oDot.layers.set(3); shuttle.add(oDot); // overlay only: the shuttle as a gold dot on the video
+  scene.add(shuttle);
+  const N_TRAIL = 22;
+  const trail = [...Array(N_TRAIL)].map((_, i) => {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, depthWrite: false }));
+    m.layers.enable(DYN); scene.add(m); return m;
   });
-  function tube(m, a, b, r) {
-    const d = b.clone().sub(a), len = d.length(); m.visible = len > 1e-4; if (!m.visible) return;
-    m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(UP, d.divideScalar(len)); m.scale.set(r, len, r);
-  }
-  let showT = true, showS = true, sByF = {};
-
-  function segGeom(geom, rows) {  // rows: consecutive path rows -> coloured segments
-    const pos = [], col = [];
-    for (let i = 1; i < rows.length; i++) {
-      const a = rows[i - 1], b = rows[i], c = a[4] && b[4] ? YEL : GRY;
-      for (const r of [a, b]) { const v = P(r[1], r[2], r[3]); pos.push(v.x, v.y, v.z); col.push(c.r, c.g, c.b); }
-    }
-    geom.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); geom.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
-    geom.computeBoundingSphere();
+  const dropMat = new THREE.LineDashedMaterial({ color: 0xffd166, dashSize: 0.08, gapSize: 0.06, transparent: true, opacity: 0.55 });
+  const dropGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+  const drop = new THREE.Line(dropGeo, dropMat); scene.add(drop);
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.09, 24), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45, depthWrite: false }));
+  shadow.rotation.x = -Math.PI / 2; scene.add(shadow);
+  let flightLine = null;
+  const flashes = [];
+  function flash(p) {
+    const m = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 40), new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, side: THREE.DoubleSide, depthWrite: false }));
+    m.position.copy(p); m.layers.enable(DYN); scene.add(m); flashes.push({ m, t0: performance.now() });
   }
 
-  // A player holds the racket in one hand all rally and it never vanishes: the racket hand is the wrist nearer the
-  // detected heads over the rally; between detections (the detector misses ~10-35% of frames) its direction from the
-  // hand is interpolated, held at the ends, and smoothed over +-2 frames.
-  function racketTrack(pl) {
-    if (pl.rkfit && Object.keys(pl.rkfit).length) {  // multi-camera racket fit: grip + direction per frame
-      pl.rk = {}; pl.hand = WRISTS[1];
-      for (const [k, r] of Object.entries(pl.rkfit)) pl.rk[k] = { grip: r.slice(0, 3), dir: r.slice(3, 6), src: r[6] };
-      return;
-    }
-    const ks = Object.keys(pl.frames).map(Number).sort((a, b) => a - b);
-    const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], nrm = v => { const n = Math.hypot(...v) || 1; return v.map(c => c / n); };
-    const vote = [0, 0];
-    for (const k of ks) { const R = pl.racket[k], J = pl.frames[k]; if (!R) continue;
-      const d = WRISTS.map(j => J[j] ? Math.hypot(...sub(R, J[j])) : 1e9); vote[d[0] <= d[1] ? 0 : 1]++; }
-    pl.hand = WRISTS[vote[0] >= vote[1] ? 0 : 1]; pl.rk = {};
-    const det = ks.filter(k => pl.racket[k] && pl.frames[k][pl.hand] && Math.hypot(...sub(pl.racket[k], pl.frames[k][pl.hand])) > 0.05);
-    if (!det.length) return;
-    const dir = k => nrm(sub(pl.racket[k], pl.frames[k][pl.hand]));
-    const raw = {}; let j = 0;
-    for (const k of ks) {
-      while (j < det.length - 1 && det[j + 1] <= k) j++;
-      const a = det[j], b = det[Math.min(j + 1, det.length - 1)];
-      if (k <= a || a === b) raw[k] = [dir(a), a]; else if (k >= b) raw[k] = [dir(b), b];
-      else { const t = (k - a) / (b - a), da = dir(a), db = dir(b); raw[k] = [nrm(da.map((c, q) => (1 - t) * c + t * db[q])), t < 0.5 ? a : b]; }
-    }
-    for (const k of ks) {
-      const s = [0, 0, 0]; for (let q = k - 2; q <= k + 2; q++) if (raw[q]) raw[q][0].forEach((c, n) => s[n] += c);
-      const near = raw[k][1];
-      pl.rk[k] = { dir: nrm(s), src: pl.racket[k] ? pl.racket[k][3] : (pl.racket[near][3] === 3 ? 2 : pl.racket[near][3]) };
+  // ---------- broadcast overlay ----------
+  const overlay = $("overlay");
+  const oRenderer = new THREE.WebGLRenderer({ canvas: overlay, antialias: true, alpha: true });
+  oRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const oCam = new THREE.PerspectiveCamera(30, 16 / 9, 0.1, 200);
+  oCam.layers.set(DYN); oCam.layers.enable(3);
+  const bcCam = new THREE.PerspectiveCamera(30, 16 / 9, 0.1, 200); // the broadcast view for the main stage
+
+  function rodrigues(r) {
+    const th = Math.hypot(r[0], r[1], r[2]);
+    if (th < 1e-12) return [[1,0,0],[0,1,0],[0,0,1]];
+    const k = r.map((v) => v / th), c = Math.cos(th), s = Math.sin(th), C = 1 - c;
+    return [[c + k[0]*k[0]*C, k[0]*k[1]*C - k[2]*s, k[0]*k[2]*C + k[1]*s],
+            [k[1]*k[0]*C + k[2]*s, c + k[1]*k[1]*C, k[1]*k[2]*C - k[0]*s],
+            [k[2]*k[0]*C - k[1]*s, k[2]*k[1]*C + k[0]*s, c + k[2]*k[2]*C]];
+  }
+  function setBroadcast(cam, c) {
+    const R = rodrigues(c.rvec), t = c.tvec;
+    const C = [0, 1, 2].map((i) => -(R[0][i]*t[0] + R[1][i]*t[1] + R[2][i]*t[2]));
+    const dir = (v) => new THREE.Vector3(v[0], v[2], -v[1]); // court direction -> three direction
+    const X = dir(R[0]), Y = dir(R[1]).negate(), Z = dir(R[2]).negate();
+    cam.matrixAutoUpdate = true;
+    cam.position.copy(V(C[0], C[1], C[2]));
+    cam.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(X, Y, Z));
+    cam.fov = 2 * Math.atan(c.size[1] / 2 / c.f) * 180 / Math.PI;
+    cam.aspect = c.size[0] / c.size[1];
+    cam.updateProjectionMatrix();
+    return { pos: cam.position.clone(), quat: cam.quaternion.clone(), fov: cam.fov };
+  }
+
+  // ---------- data ----------
+  let D = null, P = [], frame = 0, playing = false, bc = null, lastHit = -1;
+  const video = $("video");
+  const opts = { trail: true, flight: false, drop: true, overlay: true };
+
+  function lerp3(a, b, w) { return a && b ? [a[0] + (b[0] - a[0]) * w, a[1] + (b[1] - a[1]) * w, a[2] + (b[2] - a[2]) * w] : a || null; }
+  function shAt(t) {
+    const k = Math.floor(t), w = t - k, a = D.shuttle[k], b = D.shuttle[Math.min(k + 1, D.T - 1)];
+    return lerp3(a, b, w);
+  }
+  function playerFrame(p, t) {
+    const k = Math.floor(t), w = t - k, a = p.j[k], b = p.j[Math.min(k + 1, D.T - 1)];
+    if (!a) return null;
+    if (!b) return a;
+    const o = new Array(a.length);
+    for (let i = 0; i < a.length; i++) o[i] = a[i] + (b[i] - a[i]) * w;
+    return o;
+  }
+  function racketFrame(p, t) {
+    const k = Math.floor(t), w = t - k, a = p.rk[k], b = p.rk[Math.min(k + 1, D.T - 1)];
+    if (!a) return null; if (!b) return a;
+    return a.map((v, i) => v + (b[i] - v) * w);
+  }
+
+  const J = [...Array(24)].map(() => new THREE.Vector3());
+  function drawPlayer(pl, data, t) {
+    const f = playerFrame(data, t);
+    pl.g.visible = !!f;
+    if (!f) return;
+    for (let j = 0; j < 24; j++) J[j].copy(V(f[3*j], f[3*j+1], f[3*j+2]));
+    for (const m of pl.bones) placeBone(m, J[m.userData.a], J[m.userData.b], m.userData.r);
+    for (const m of pl.joints) m.position.copy(J[m.userData.j]);
+    // head: along neck -> head joint, a little above it
+    tmpD.subVectors(J[15], J[12]).normalize();
+    pl.head.position.copy(J[15]).addScaledVector(tmpD, 0.06);
+    pl.head.quaternion.setFromUnitVectors(UP, tmpD);
+    pl.hair.position.copy(pl.head.position).addScaledVector(tmpD, 0.005);
+    pl.hair.quaternion.copy(pl.head.quaternion);
+    // racket: grip at the wrist, head centre 0.47 m along u
+    const r = racketFrame(data, t);
+    pl.rk.visible = !!r;
+    if (r) {
+      const g = V(r[0], r[1], r[2]), h = V(r[3], r[4], r[5]);
+      tmpD.subVectors(h, g); const len = tmpD.length(); const u = tmpD.clone().divideScalar(len || 1);
+      const q = new THREE.Quaternion().setFromUnitVectors(UP, u);
+      pl.handle.position.copy(g).addScaledVector(u, 0.08); pl.handle.quaternion.copy(q);
+      pl.shaft.position.copy(g).addScaledVector(u, 0.27); pl.shaft.quaternion.copy(q);
+      // face: the ring's plane contains u; its normal is horizontal-ish, across u
+      let n = new THREE.Vector3().crossVectors(u, UP); if (n.lengthSq() < 1e-6) n.set(1, 0, 0); n.normalize();
+      const side = new THREE.Vector3().crossVectors(n, u).normalize();
+      const basis = new THREE.Matrix4().makeBasis(side, u, n);
+      for (const o of [pl.ring, pl.strings]) {
+        o.position.copy(h); o.quaternion.setFromRotationMatrix(basis);
+        o.scale.set(0.105, 0.125, 1);
+      }
     }
   }
 
-  let D = null, byF = {}, frameNow = -1, whole = true, showRk = true;
-  const video = document.getElementById("vid"), readout = document.getElementById("readout");
-  const tl = document.getElementById("tl"), tlg = tl.getContext("2d");
-  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-
-  function drawTL() {
+  function setFrame(t) {
     if (!D) return;
-    const w = tl.clientWidth, h = tl.clientHeight, dpr = Math.min(2, window.devicePixelRatio || 1);
-    tl.width = w * dpr; tl.height = h * dpr; tlg.setTransform(dpr, 0, 0, dpr, 0, 0); tlg.clearRect(0, 0, w, h);
-    const n = D.k1 - D.k0 + 1, x = f => (f - D.k0) / n * w, bw = Math.max(1, w / n + 0.5);
-    tlg.fillStyle = css("--chip"); tlg.fillRect(0, 8, w, 24); tlg.fillRect(0, 46, w, 24);
-    for (const r of D.path) { tlg.fillStyle = r[4] ? css("--label") : css("--unsure"); tlg.fillRect(x(r[0]), 8, bw, 24); }
-    tlg.fillStyle = css("--hit"); for (const hf of D.hits) tlg.fillRect(x(hf) - 1, 3, 2.5, 34);
-    tlg.fillStyle = css("--unsure"); for (const hf of D.hits_unsure || []) tlg.fillRect(x(hf) - 1, 3, 2.5, 34);
-    for (const [f, dv] of Object.entries(D.student.dist)) { tlg.fillStyle = dv < 0.25 ? css("--good") : dv < 0.6 ? css("--mid") : css("--bad"); tlg.fillRect(x(+f), 46, bw, 24); }
-    tlg.fillStyle = css("--stu"); for (const hf of D.student.hits) tlg.fillRect(x(hf) - 1, 41, 2.5, 34);
-    if (frameNow >= 0) { tlg.fillStyle = css("--fg"); tlg.fillRect(x(frameNow) - 1, 0, 2, h); }
+    frame = Math.max(0, Math.min(D.T - 1.001, t));
+    P.forEach((pl, i) => drawPlayer(pl, D.players[i], frame));
+    const s = shAt(frame);
+    shuttle.visible = !!s;
+    if (s) {
+      const p = V(s[0], s[1], s[2]);
+      shuttle.position.copy(p);
+      const s2 = shAt(Math.min(frame + 1, D.T - 1.001));
+      if (s2) { tmpD.copy(V(s2[0], s2[1], s2[2])).sub(p); if (tmpD.lengthSq() > 1e-8) shuttle.quaternion.setFromUnitVectors(UP, tmpD.normalize().negate()); }
+      drop.visible = shadow.visible = opts.drop;
+      if (opts.drop) {
+        dropGeo.setFromPoints([p, new THREE.Vector3(p.x, 0.01, p.z)]); drop.computeLineDistances();
+        shadow.position.set(p.x, 0.012, p.z);
+        const hgt = Math.max(0, s[2]); shadow.scale.setScalar(1 + hgt * 0.25); shadow.material.opacity = 0.5 / (1 + hgt * 0.6);
+      }
+    } else { drop.visible = shadow.visible = false; }
+    trail.forEach((m, i) => {
+      const tt = frame - (i + 1) * 0.6; const q = tt >= 0 && opts.trail ? shAt(tt) : null;
+      m.visible = !!q && !!s;
+      if (q) { m.position.copy(V(q[0], q[1], q[2])); const a = 1 - i / N_TRAIL; m.scale.setScalar(0.022 * a + 0.004); m.material.opacity = 0.55 * a * a; }
+    });
+    // hit flashes when crossing a hit going forward
+    const k = Math.floor(frame);
+    for (const h of D.hits) if (h.f > lastHit && h.f <= k && k - h.f < 3) { const q = D.shuttle[h.f]; if (q) flash(V(q[0], q[1], q[2])); }
+    lastHit = k;
+    // hud + timeline
+    const sec = frame / D.fps;
+    $("tcode").textContent = `${sec.toFixed(2)} s · frame ${k}`;
+    const pct = (100 * frame / (D.T - 1)).toFixed(3) + "%";
+    $("fill").style.width = pct; $("knob").style.left = pct;
+    const nh = D.hits.filter((h) => h.f <= k).length;
+    const ht = s ? s[2].toFixed(2) : "–";
+    $("hud").innerHTML = `<span class="chip">shuttle height <b>${ht} m</b></span><span class="chip">hits <b>${nh}/${D.hits.length}</b></span>`;
   }
-  function seekFromTL(e) {
-    if (!D) return; const r = tl.getBoundingClientRect();
-    const f = D.k0 + Math.round((e.clientX - r.left) / r.width * (D.k1 - D.k0 + 1));
-    video.pause(); video.currentTime = Math.max(0, (f - D.k0 + 0.5) / D.fps);
+
+  function buildFlight() {
+    if (flightLine) { scene.remove(flightLine); flightLine = null; }
+    if (!opts.flight || !D) return;
+    const pts = D.shuttle.filter(Boolean).map((q) => V(q[0], q[1], q[2]));
+    flightLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.35 }));
+    scene.add(flightLine);
+  }
+
+  // ---------- cameras ----------
+  let follow = false, orbit = false, camAnim = null;
+  const PRESETS = {
+    "broadcast": () => bc && { pos: bc.pos, target: bc.pos.clone().add(new THREE.Vector3(0, 0, -1).applyQuaternion(bc.quat).multiplyScalar(18)), fov: bc.fov },
+    "side": () => ({ pos: new THREE.Vector3(13.5, 3.2, 0), target: new THREE.Vector3(0, 1.0, 0), fov: 42 }),
+    "behind": () => ({ pos: new THREE.Vector3(0, 5.5, -16), target: new THREE.Vector3(0, 0.8, 1), fov: 40 }),
+    "top": () => ({ pos: new THREE.Vector3(0, 21, 0.01), target: new THREE.Vector3(0, 0, 0), fov: 42 }),
+    "follow": () => null,
+    "orbit": () => ({ pos: new THREE.Vector3(10, 6.5, 10), target: new THREE.Vector3(0, 0.9, 0), fov: 40 }),
+  };
+  const LABELS = { broadcast: "broadcast", side: "side", behind: "far end", top: "top-down", follow: "follow shuttle", orbit: "orbit" };
+  const camBtns = {};
+  Object.keys(PRESETS).forEach((k, i) => {
+    const b = document.createElement("button"); b.textContent = `${i + 1} ${LABELS[k]}`; b.onclick = () => setView(k);
+    $("cams").appendChild(b); camBtns[k] = b;
+  });
+  let view = "orbit";
+  function setView(k) {
+    view = k; follow = k === "follow"; orbit = k === "orbit";
+    Object.entries(camBtns).forEach(([n, b]) => b.classList.toggle("on", n === k));
+    const p = PRESETS[k]();
+    if (p) camAnim = { from: { pos: camera.position.clone(), target: controls.target.clone(), fov: camera.fov }, to: p, t0: performance.now(), dur: 900 };
+  }
+  const ease = (x) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+
+  // ---------- loop ----------
+  function resize() {
+    const w = stage.clientWidth, h = stage.clientHeight;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    const vw = overlay.clientWidth, vh = overlay.clientHeight;
+    oRenderer.setSize(vw, vh, false);
+  }
+  window.addEventListener("resize", resize);
+  let last = performance.now();
+  function tick(now) {
+    requestAnimationFrame(tick);
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (D && playing) {
+      if (!video.paused && video.readyState >= 2) setFrame(video.currentTime * D.fps);
+      else { setFrame(frame + dt * D.fps * parseFloat($("speed").value)); if (frame >= D.T - 1.01) pause(); }
+    }
+    if (camAnim) {
+      const x = Math.min(1, (now - camAnim.t0) / camAnim.dur), e = ease(x);
+      camera.position.lerpVectors(camAnim.from.pos, camAnim.to.pos, e);
+      controls.target.lerpVectors(camAnim.from.target, camAnim.to.target, e);
+      camera.fov = camAnim.from.fov + (camAnim.to.fov - camAnim.from.fov) * e; camera.updateProjectionMatrix();
+      if (x >= 1) camAnim = null;
+    } else if (follow && shuttle.visible) {
+      const want = shuttle.position.clone().add(new THREE.Vector3(0, 0.3, 0));
+      controls.target.lerp(want, 0.12);
+      const off = new THREE.Vector3(6.5, 3.2, 5.5); camera.position.lerp(want.clone().add(off), 0.06);
+    } else if (orbit) {
+      const r = Math.hypot(camera.position.x - controls.target.x, camera.position.z - controls.target.z);
+      const a = Math.atan2(camera.position.z - controls.target.z, camera.position.x - controls.target.x) + dt * 0.12;
+      camera.position.x = controls.target.x + r * Math.cos(a); camera.position.z = controls.target.z + r * Math.sin(a);
+    }
+    controls.update();
+    for (let i = flashes.length - 1; i >= 0; i--) {
+      const f = flashes[i], a = (now - f.t0) / 500;
+      if (a >= 1) { scene.remove(f.m); flashes.splice(i, 1); continue; }
+      f.m.scale.setScalar(0.08 + a * 0.6); f.m.material.opacity = 1 - a; f.m.quaternion.copy(camera.quaternion);
+    }
+    renderer.render(scene, camera);
+    if (opts.overlay && bc) oRenderer.render(scene, oCam); else oRenderer.clear();
+  }
+
+  // ---------- UI ----------
+  function play() {
+    if (!D) return; if (frame >= D.T - 1.01) setFrame(0);
+    playing = true; $("play").textContent = "❚❚";
+    video.playbackRate = parseFloat($("speed").value);
+    video.currentTime = frame / D.fps; video.play().catch(() => {});
+  }
+  function pause() { playing = false; $("play").textContent = "▶"; video.pause(); }
+  $("play").onclick = () => playing ? pause() : play();
+  $("speed").onchange = () => { video.playbackRate = parseFloat($("speed").value); };
+  function toggle(id, key, fn) { $(id).onclick = () => { opts[key] = !opts[key]; $(id).classList.toggle("on", opts[key]); fn && fn(); setFrame(frame); }; }
+  toggle("tTrail", "trail"); toggle("tFlight", "flight", buildFlight); toggle("tDrop", "drop"); toggle("tOverlay", "overlay");
+  function seekFrom(ev) {
+    const r = $("tl").getBoundingClientRect(); const x = Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width));
+    lastHit = 1e9; setFrame(x * (D.T - 1)); lastHit = Math.floor(frame); video.currentTime = frame / D.fps;
   }
   let dragging = false;
-  tl.addEventListener("pointerdown", e => { dragging = true; tl.setPointerCapture(e.pointerId); seekFromTL(e); });
-  tl.addEventListener("pointermove", e => { if (dragging) seekFromTL(e); });
-  tl.addEventListener("pointerup", () => { dragging = false; });
-
-  function setFrame(k) {
-    if (!D || k === frameNow) return; frameNow = k;
-    const X = byF[k];
-    ball.visible = drop.visible = shadow.visible = !!X;
-    for (const r of ["tv", "side"]) rays[r].visible = false;
-    if (X) {
-      const p = P(X[1], X[2], X[3]); ball.position.copy(p); ballMat.color.copy(X[4] ? YEL : GRY);
-      [["tv", X[5]], ["side", X[6]]].forEach(([r, seen]) => {
-        rays[r].visible = !!seen; if (!seen) return;
-        const c = P(...D.cams[r]); rays[r].geometry.setFromPoints([c, p.clone().sub(c).multiplyScalar(1.1).add(c)]);
-      });
-      drop.geometry.setFromPoints([p, P(X[1], X[2], 0.004)]); shadow.position.copy(P(X[1], X[2], 0.004));
-    }
-    const SP = D.student.players;
-    for (let i = 0; i < 4; i++) {
-      const pl = SP[i], J = pl && pl.frames[k]; bones[i].visible = heads[i].visible = !!J; if (!J) continue;
-      const { tubes, balls } = bones[i].userData;
-      EDGES.forEach(([u, w], e) => {
-        const m = tubes[e]; m.visible = !!(J[u] && J[w]); if (!m.visible) return;
-        const a = P(...J[u]), b = P(...J[w]), d = b.clone().sub(a), len = d.length();
-        if (len < 1e-4) { m.visible = false; return; }
-        m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(UP, d.divideScalar(len)); m.scale.set(boneR[e], len, boneR[e]);
-      });
-      balls.forEach((m, j) => { m.visible = jointR[j] > 0 && !!J[j]; if (m.visible) m.position.copy(P(...J[j])); });
-      const hd = J[HEAD]; heads[i].visible = !!hd; if (hd) heads[i].position.copy(P(...hd));
-    }
-    for (let i = 0; i < 4; i++) {  // student rackets: grip + direction per frame, orange
-      const pl = SP[i], J = pl && pl.frames[k], rk = J && pl.rk && pl.rk[k];
-      rings[i].visible = showRk && !!rk; if (!rings[i].visible) continue;
-      rings[i].userData.mats[0].color.setHex(0xff8c28); rings[i].userData.mats[1].color.setHex(0xff8c28);
-      placeRacket(rings[i], P(rk[0], rk[1], rk[2]), P(rk[3], rk[4], rk[5]));
-    }
-    // teacher on/off
-    ball.visible = ball.visible && showT; drop.visible = drop.visible && showT; shadow.visible = shadow.visible && showT;
-    for (const r of ["tv", "side"]) rays[r].visible = rays[r].visible && showT;
-    for (let i = 0; i < 4; i++) { bones[i].visible = bones[i].visible && showS; heads[i].visible = heads[i].visible && showS; rings[i].visible = rings[i].visible && showS; }
-    const trailPts = (get, n) => { const pts = []; for (let q = k - n; q <= k; q++) { const r = get(q); if (r) pts.push(P(r[1], r[2], r[3])); } return pts; };
-    tTrail.visible = showT; if (showT) tTrail.geometry.setFromPoints(trailPts(q => byF[q], 12));
-    // student
-    const Sx = sByF[k];
-    sBall.visible = sDrop.visible = sTrail.visible = showS && !!Sx;
-    if (sBall.visible) { const p = P(Sx[1], Sx[2], Sx[3]); sBall.position.copy(p); sDrop.geometry.setFromPoints([p, P(Sx[1], Sx[2], 0.004)]); sTrail.geometry.setFromPoints(trailPts(q => sByF[q], 12)); }
-    for (let i = 0; i < 4; i++) {  // teacher: thin blue SMPL stick figures and rackets
-      const pl = D.players[i], J = showT && pl && pl.frames[k], g = sBody[i]; g.visible = !!J;
-      const rk = J && pl.rk && pl.rk[k], grip = rk && (rk.grip ? P(...rk.grip) : (J[pl.hand] ? P(...J[pl.hand]) : null));
-      g.userData.rkm.visible = showRk && !!grip;
-      if (!J) continue;
-      g.userData.tubes.forEach((m, e) => { if (e < EDGES.length && J[EDGES[e][0]] && J[EDGES[e][1]]) tube(m, P(...J[EDGES[e][0]]), P(...J[EDGES[e][1]]), 0.022); else m.visible = false; });
-      g.userData.head.visible = !!J[15]; if (J[15]) g.userData.head.position.copy(P(...J[15]));
-      if (grip) placeRacket(g.userData.rkm, grip, P(...rk.dir));
-    }
-    const dk = D.student.dist[k];
-    const stuTxt = Sx ? `<br><span style="color:var(--stu)">●</span> student (TV only): x ${Sx[1].toFixed(2)} · y ${Sx[2].toFixed(2)} · height ${Sx[3].toFixed(2)} m`
-      + (dk !== undefined ? ` · <b>${(dk * 100).toFixed(0)} cm from the teacher's label</b>` : (X ? ` · ${(Math.hypot(Sx[1] - X[1], Sx[2] - X[2], Sx[3] - X[3]) * 100).toFixed(0)} cm from the teacher (unlabelled frame)` : "")) : "";
-    const seen = X ? [X[5] && "TV", X[6] && "side"].filter(Boolean) : [];
-    readout.innerHTML = (X
-      ? `frame <b>${k}</b> · teacher ${X[4] ? '<span class="pill lab">labelled</span>' : '<span class="pill uns">unsure, not a label</span>'}<br>`
-        + `<span style="color:var(--label)">●</span> teacher: x ${X[1].toFixed(2)} · y ${X[2].toFixed(2)} · <b>height ${X[3].toFixed(2)} m</b><br>`
-        + `detected by: ${seen.length ? seen.join(" + ") : "neither camera (filled in by physics)"}`
-      : `frame <b>${k}</b> · outside the teacher's flight (before the serve or after the rally)`) + stuTxt;
-    drawTL();
-  }
-
-  const views = {
-    orbit: () => [P(W + 9, -5, 7), P(W / 2, NET, 1)],
-    tv: () => [P(...D.cams.tv), P(W / 2, NET - 1, 0)],
-    side: () => [P(...D.cams.side), P(W / 2 - 3, NET, 1)],
-    p1: () => [P(...D.cams.p1), P(W / 2 - 1, NET - 3.5, 0.6)],
-    p2: () => [P(...D.cams.p2), P(W / 2 - 1, NET + 3.5, 0.6)],
-    top: () => [P(W / 2, NET + 0.01, 22), P(W / 2, NET, 0)],
-    end: () => [P(-7, NET, 1.6), P(W / 2, NET, 1.4)],
-  };
-  function setView(name) {
-    const [pos, tgt] = views[name](); cam.position.copy(pos); ctl.target.copy(tgt);
-    cam.fov = name === "tv" ? 28 : name === "side" ? 62 : name[0] === "p" ? 40 : 45; cam.updateProjectionMatrix(); ctl.update();
-    for (const b of document.querySelectorAll("#views button[data-v]")) b.classList.toggle("on", b.dataset.v === name);
-  }
-  document.getElementById("views").addEventListener("click", e => { if (e.target.dataset.v) setView(e.target.dataset.v); });
-
-  // rackets on/off: the 3D rackets, and the video swaps to a copy rendered without them (same timing)
-  const vsrc = uid => `v/${uid}.mp4`;
-  const rkbtn = document.getElementById("rkbtn");
-  rkbtn.addEventListener("click", () => {
-    showRk = !showRk; rkbtn.classList.toggle("on", showRk); rkbtn.setAttribute("aria-pressed", showRk);
-    const k = frameNow; frameNow = -1; setFrame(k);
+  $("tl").addEventListener("pointerdown", (e) => { if (!D) return; dragging = true; $("tl").setPointerCapture(e.pointerId); seekFrom(e); });
+  $("tl").addEventListener("pointermove", (e) => dragging && seekFrom(e));
+  $("tl").addEventListener("pointerup", () => { dragging = false; });
+  window.addEventListener("keydown", (e) => {
+    if (e.target.tagName === "SELECT") return;
+    if (e.code === "Space") { e.preventDefault(); playing ? pause() : play(); }
+    else if (e.key === "ArrowRight") { pause(); setFrame(Math.floor(frame) + 1); video.currentTime = frame / D.fps; }
+    else if (e.key === "ArrowLeft") { pause(); lastHit = 1e9; setFrame(Math.floor(frame) - 1); lastHit = Math.floor(frame); video.currentTime = frame / D.fps; }
+    else if (/^[1-6]$/.test(e.key)) setView(Object.keys(PRESETS)[+e.key - 1]);
   });
-  for (const [id, set] of [["tbtn", v => showT = v], ["sbtn", v => showS = v]]) {
-    const b = document.getElementById(id);
-    b.addEventListener("click", () => { const on = !b.classList.contains("on"); set(on); b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); const k = frameNow; frameNow = -1; setFrame(k); });
-  }
-  async function load(uid) {
-    const r = await fetch(`d/${uid}.json`); D = await r.json(); byF = {};
-    for (const row of D.path) byF[row[0]] = row;
-    sByF = {}; for (const row of D.student.path) sByF[row[0]] = row;
-    D.players.forEach(racketTrack);
-    const seen = [0, 0];
-    D.student.players.forEach((pl, i) => { if (i < 4) { const c = TEAM[pl.side][seen[pl.side]++ % 2]; bones[i].material.color.setHex(c); } });
-    for (let i = D.student.players.length; i < 4; i++) bones[i].visible = heads[i].visible = rings[i].visible = false;
-    for (const k of ["tv", "side", "p1", "p2"]) { if (!D.cams[k]) { camMarks[k].visible = camMarks[k].userData.label.visible = false; continue; } camMarks[k].visible = camMarks[k].userData.label.visible = true; const c = P(...D.cams[k]); camMarks[k].position.copy(c); camMarks[k].userData.label.position.copy(c.clone().add(new THREE.Vector3(0, 0.6, 0))); }
-    const st = D.stats; document.getElementById("tlstat").textContent = `teacher: ${Math.round(D.conf_frac * 100)}% of flight frames labelled, ${D.hits.length} sure hits · student: shuttle median ${st.med_cm} cm from the labels, ${st.hits_match} of ${st.hits_t} hits found (${st.hits_s} predicted)` + (st.body_cm ? `, bodies ${st.body_cm[0]} cm from the teacher's` : "");
-    frameNow = -1; video.src = vsrc(uid); setFrame(D.k0);
-  }
-  function tick() {
-    if (D) setFrame(D.k0 + Math.min(D.k1 - D.k0, Math.max(0, Math.floor(video.currentTime * D.fps))));
-    ctl.update(); renderer.render(scene, cam); requestAnimationFrame(tick);
-  }
-  function resize() {
-    const w = box.clientWidth, h = box.clientHeight || Math.round(w * 11 / 16);
-    if (!w || !h) return;  // hidden or mid-transition: keep the last good size
-    const pr = Math.min(2, window.devicePixelRatio || 1, Math.sqrt(4.5e6 / (w * h)));  // at most ~4.5 MP of drawing buffer
-    renderer.setPixelRatio(pr); renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); drawTL();
-  }
-  new ResizeObserver(resize).observe(box);
-  window.addEventListener("resize", resize); document.addEventListener("fullscreenchange", () => requestAnimationFrame(resize));
-  renderer.domElement.addEventListener("webglcontextrestored", resize);
+  video.addEventListener("ended", pause);
 
-  const rsel = document.getElementById("rsel");
-  for (const r of R) { const o = document.createElement("option"); o.value = r.uid; o.textContent = `${r.uid} · ${r.secs}s · ${r.players === 4 ? "doubles" : "singles"} · shuttle ${r.med_cm} cm · bodies ${r.body ?? "–"} cm · hits ${r.hm}/${r.hits}`; rsel.appendChild(o); }
-  const pick = uid => { rsel.value = uid; document.getElementById("rcount").textContent = `rally ${R.findIndex(r => r.uid === uid) + 1} of ${R.length}`; load(uid); };
-  rsel.onchange = () => pick(rsel.value);
-  const step = d => { const i = R.findIndex(r => r.uid === rsel.value); pick(R[(i + d + R.length) % R.length].uid); };
-  document.getElementById("rprev").onclick = () => step(-1); document.getElementById("rnext").onclick = () => step(1);
-  const q = location.hash.slice(1); const start = R.find(r => r.uid === q) ? q : R[0].uid;
-  rsel.value = start; document.getElementById("rcount").textContent = `rally ${R.findIndex(r => r.uid === start) + 1} of ${R.length}`;
-  load(start).then(() => setView("orbit"));
-  resize(); tick();
+  function clearPlayers() { P.forEach((p) => scene.remove(p.g)); P = []; }
+  async function load(uid) {
+    pause(); $("loading").style.display = "grid";
+    D = await (await fetch(`d/${uid}.json`)).json();
+    clearPlayers();
+    const near = D.players.filter((p) => p.side === "near").length, far = D.players.filter((p) => p.side === "far").length;
+    let ni = 0, fi = 0;
+    P = D.players.map((p) => p.side === "near" ? makePlayer(ni++ ? 0xf4a261 : 0xff6b4a) : makePlayer(fi++ ? 0x8c9bff : 0x3cc8f0));
+    bc = setBroadcast(oCam, D.cam); setBroadcast(bcCam, D.cam);
+    video.src = `v/${uid}.mp4`; video.load();
+    $("ticks").innerHTML = D.hits.map((h) => {
+      const side = h.p >= 0 ? D.players[h.p].side : ""; return `<div class="hit ${side}" style="left:${(100 * h.f / (D.T - 1)).toFixed(3)}%"></div>`;
+    }).join("");
+    const s = D.stats;
+    $("stats").innerHTML = [
+      ["shuttle", s.shuttle_cm, `${s.n_shuttle} side-view points`],
+      ["players", s.player_cm, `${s.n_player} player-frames`],
+      ["hits found", D.hits.length, `${(D.T / D.fps).toFixed(1)} s · ${D.singles ? "singles" : "doubles"}`],
+    ].map(([k, v, sub], i) => `<div class="stat"><div class="v">${v == null ? "–" : v}${i < 2 && v != null ? "<small> cm</small>" : ""}</div><div class="k">${k} · ${sub}</div></div>`).join("");
+    document.querySelectorAll(".rally").forEach((b) => b.classList.toggle("on", b.dataset.uid === uid));
+    const f0 = Math.max(0, ...D.players.map((p) => p.f0));
+    lastHit = -1; setFrame(Q.f != null ? +Q.f : f0); buildFlight(); resize();
+    video.addEventListener("loadeddata", () => { video.currentTime = frame / D.fps; }, { once: true });
+    $("loading").style.display = "none";
+  }
+
+  const Q = Object.fromEntries(new URLSearchParams(location.search));
+  (async () => {
+    resize(); requestAnimationFrame(tick);
+    const idx = await (await fetch("d/index.json")).json();
+    $("rallies").innerHTML = idx.map((r, i) => `<button class="rally" data-uid="${r.uid}"><b>Rally ${i + 1}</b>
+      <small>${r.sec} s · ${r.players <= 2 ? "singles" : "doubles"} · ${r.hits} hits · shuttle ${r.shuttle_cm} cm</small></button>`).join("");
+    document.querySelectorAll(".rally").forEach((b) => b.onclick = () => load(b.dataset.uid));
+    await load(Q.r ? idx[+Q.r].uid : idx[0].uid);
+    setView(Q.view || "orbit");
+    if (Q.view && camAnim) camAnim.dur = 1;
+  })();
 })();
 </script>
-
-</body></html>
+</body>
+</html>

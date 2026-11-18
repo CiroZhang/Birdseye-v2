@@ -1,0 +1,62 @@
+[
+ {
+  "uid": "d1026_0321",
+  "sec": 13.6,
+  "players": 4,
+  "hits": 15,
+  "shuttle_cm": 6.8,
+  "player_cm": 8.3,
+  "n_shuttle": 148,
+  "n_player": 961
+ },
+ {
+  "uid": "sf_0799",
+  "sec": 16.8,
+  "players": 4,
+  "hits": 19,
+  "shuttle_cm": 7.0,
+  "player_cm": 11.0,
+  "n_shuttle": 106,
+  "n_player": 1067
+ },
+ {
+  "uid": "d1026_0316",
+  "sec": 21.2,
+  "players": 4,
+  "hits": 25,
+  "shuttle_cm": 9.0,
+  "player_cm": 10.7,
+  "n_shuttle": 170,
+  "n_player": 1577
+ },
+ {
+  "uid": "sf_0323",
+  "sec": 12.0,
+  "players": 4,
+  "hits": 15,
+  "shuttle_cm": 9.1,
+  "player_cm": 9.4,
+  "n_shuttle": 128,
+  "n_player": 816
+ },
+ {
+  "uid": "sf_0368",
+  "sec": 17.8,
+  "players": 4,
+  "hits": 20,
+  "shuttle_cm": 12.8,
+  "player_cm": 10.5,
+  "n_shuttle": 133,
+  "n_player": 1264
+ },
+ {
+  "uid": "d1026_0743",
+  "sec": 14.8,
+  "players": 4,
+  "hits": 15,
+  "shuttle_cm": 12.8,
+  "player_cm": 8.5,
+  "n_shuttle": 151,
+  "n_player": 1196
+ }
+]

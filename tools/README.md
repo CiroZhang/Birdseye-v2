@@ -56,7 +56,7 @@ The numbers, the commands that made them and every output file are in `results/r
 
 ## Viewers
 
-`export_rallynet_viewer.py` (the demo in `docs/viewer`), `export_viewer.py`, `export_demo.py`, `export_fb_viewer.py`,
+`export_viewer3d.py` (the 3D rally viewer in `docs/viewer`), `export_rallynet_viewer.py` (the teacher-vs-student viewer in `docs/teacher`), `export_viewer.py`, `export_demo.py`, `export_fb_viewer.py`,
 `fb_full_example.py`.
 
 ## Earlier experiments (kept for the record, not used by the paper)

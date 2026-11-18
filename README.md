@@ -152,7 +152,7 @@ stages from `k6z`: [`scripts/killarney/zs.slurm`](scripts/killarney/zs.slurm).
 | 4.1 reconstruction, DroneData top view | `XTOP=1 DRONE_CALIB=calib_bc tools/eval_shuttle.py ...`, `tools/xview_eval.py drone_student\|drone_tram\|drone_gvhmr` |
 | 4.2 stroke classification | `tools/bfmd_stroke.py` (+ `tools/fbs_export.py`, `tools/stroke_baselines.py`, `tools/bfmd_rgb_stroke.py`) |
 | 4.3 question answering | `tools/qa_build.py`, `tools/qa_train.py`, `tools/qa_run.py` |
-| viewer data | `tools/export_rallynet_viewer.py` |
+| viewer data | `ARCH=rallyphys STUDENT=1 BODY24=20 B24_SHAPE=5 FREE_S=1 TAG=t3 tools/export_viewer3d.py docs/viewer <uid> ...` |
 
 ## Credits
 
