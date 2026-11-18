@@ -409,7 +409,7 @@
       const basis = new THREE.Matrix4().makeBasis(side, u, n);
       for (const o of [pl.ring, pl.strings]) {
         o.position.copy(h); o.quaternion.setFromRotationMatrix(basis);
-        o.scale.set(0.105, 0.125, 1);
+        o.scale.set(0.105, 0.125, 0.11); // uniform depth: the frame tube stays ~5 mm thick from every side
       }
     }
   }
