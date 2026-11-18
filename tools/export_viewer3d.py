@@ -112,6 +112,8 @@ def main():
                 continue
             wr = Js[:, q, R_WRIST if hand[q] else L_WRIST]
             head = wr + RN.GRIP_TO_HEAD * us[:, q]
+            from export_rallynet_viewer import face_normals
+            fn = face_normals(np.where(pres[:, q, None], wr, np.nan), np.where(pres[:, q, None], us[:, q], np.nan))
             fr = np.where(pres[:, q])[0]
             players.append({
                 "hand": "R" if hand[q] else "L",
@@ -119,6 +121,7 @@ def main():
                 "on": pres[:, q].astype(int).tolist(),
                 "j": [r(Js[t, q].reshape(-1), 3) if pres[t, q] else None for t in range(T)],
                 "rk": [r(np.r_[wr[t], head[t]], 3) if pres[t, q] else None for t in range(T)],
+                "fn": [r(fn[t], 3) if pres[t, q] else None for t in range(T)],  # racket-face normal, turning smoothly
                 "side": "near" if np.nanmedian(Js[pres[:, q], q, 0, 1]) < NET_Y else "far",
             })
         hits = [{"f": int(k), "p": int(np.argmax(hp[k]))} for k in pk]

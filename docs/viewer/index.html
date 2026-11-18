@@ -247,7 +247,7 @@
     const mat = solid ? new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.05 })
                       : new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.45, roughness: 0.4 });
     const skin = solid ? new THREE.MeshStandardMaterial({ color: 0xe8c3a8, roughness: 0.7 }) : mat;
-    const rad = (k) => solid ? (RAD[k] || 0.05) : (/^(0-3|3-6|6-9)$/.test(k) ? 0.022 : 0.016);
+    const rad = (k) => solid ? (RAD[k] || 0.05) : (/^(0-3|3-6|6-9)$/.test(k) ? 0.03 : 0.023);
     const g = new THREE.Group();
     const bones = BONES.map(([a, b]) => {
       const m = new THREE.Mesh(unitCyl, (a >= 18 || b >= 18) && !(a === 16 || a === 17) ? skin : mat);
@@ -256,7 +256,7 @@
     const joints = [];
     for (let j = 0; j < 24; j++) {
       if (j === 15) continue;
-      const r = solid ? Math.max(...BONES.filter(([a, b]) => a === j || b === j).map(([a, b]) => RAD[a + "-" + b] || 0.04)) : 0.03;
+      const r = solid ? Math.max(...BONES.filter(([a, b]) => a === j || b === j).map(([a, b]) => RAD[a + "-" + b] || 0.04)) : 0.036;
       const m = new THREE.Mesh(unitSph, j >= 20 ? skin : mat); m.scale.setScalar(r); m.castShadow = true;
       m.userData = { j }; g.add(m); joints.push(m);
     }
@@ -399,8 +399,11 @@
       const q = new THREE.Quaternion().setFromUnitVectors(UP, u);
       pl.handle.position.copy(g).addScaledVector(u, 0.08); pl.handle.quaternion.copy(q);
       pl.shaft.position.copy(g).addScaledVector(u, 0.27); pl.shaft.quaternion.copy(q);
-      // face: the ring's plane contains u; its normal is horizontal-ish, across u
-      let n = new THREE.Vector3().crossVectors(u, UP); if (n.lengthSq() < 1e-6) n.set(1, 0, 0); n.normalize();
+      // face: the exported normal turns smoothly with the swing; kept across the shaft
+      const fk = Math.floor(t), fw = t - fk, fa = data.fn && data.fn[fk], fb = data.fn && data.fn[Math.min(fk + 1, D.T - 1)];
+      const nf = fa ? (fb ? lerp3(fa, fb, fw) : fa) : null;
+      let n = nf ? new THREE.Vector3(nf[0], nf[2], -nf[1]) : new THREE.Vector3().crossVectors(u, UP);
+      n.addScaledVector(u, -n.dot(u)); if (n.lengthSq() < 1e-8) n.set(1, 0, 0); n.normalize();
       const side = new THREE.Vector3().crossVectors(n, u).normalize();
       const basis = new THREE.Matrix4().makeBasis(side, u, n);
       for (const o of [pl.ring, pl.strings]) {
