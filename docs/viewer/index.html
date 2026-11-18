@@ -402,7 +402,8 @@
       // face: the exported normal turns smoothly with the swing; kept across the shaft
       const fk = Math.floor(t), fw = t - fk, fa = data.fn && data.fn[fk], fb = data.fn && data.fn[Math.min(fk + 1, D.T - 1)];
       const nf = fa ? (fb ? lerp3(fa, fb, fw) : fa) : null;
-      let n = nf ? new THREE.Vector3(nf[0], nf[2], -nf[1]) : new THREE.Vector3().crossVectors(u, UP);
+      if (nf) pl.lastN = new THREE.Vector3(nf[0], nf[2], -nf[1]);  // no normal this frame: keep the last one
+      let n = pl.lastN ? pl.lastN.clone() : new THREE.Vector3().crossVectors(u, UP);
       n.addScaledVector(u, -n.dot(u)); if (n.lengthSq() < 1e-8) n.set(1, 0, 0); n.normalize();
       const side = new THREE.Vector3().crossVectors(n, u).normalize();
       const basis = new THREE.Matrix4().makeBasis(side, u, n);

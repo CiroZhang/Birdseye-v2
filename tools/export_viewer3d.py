@@ -75,6 +75,35 @@ def contact_swing24(S, J, u, pres, hits, hand, fps, sd=3.0, k=9, max_lean=0.35, 
     return J, u
 
 
+def steady_face(n, u, ok, k=5):
+    """Display: a racket-face normal for every present frame, with no flips. Gaps are filled from the nearest frame
+    that has one, the sign is kept consistent in time (a face has two sides), a centred k-frame average smooths
+    single-frame flips, and the result is kept across the current shaft."""
+    T = len(n)
+    good = np.isfinite(n).all(1) & ok
+    if not good.any():
+        return n
+    idx = np.where(good)[0]
+    out = n.copy()
+    for t in range(T):  # nearest frame with a normal
+        if ok[t] and not good[t]:
+            out[t] = n[idx[np.argmin(np.abs(idx - t))]]
+    prev = None
+    for t in range(T):  # consistent sign
+        if ok[t] and np.isfinite(out[t]).all():
+            if prev is not None and out[t] @ prev < 0:
+                out[t] = -out[t]
+            prev = out[t]
+    sm = out.copy()
+    for t in np.where(ok)[0]:
+        a, b = max(0, t - k // 2), min(T, t + k // 2 + 1)
+        m = ok[a:b] & np.isfinite(out[a:b]).all(1)
+        v = out[a:b][m].mean(0)
+        v = v - (v @ u[t]) * u[t] if np.isfinite(u[t]).all() else v
+        sm[t] = v / (np.linalg.norm(v) + 1e-9)
+    return np.where(ok[:, None], sm, np.nan)
+
+
 def r(x, d=3):
     return None if x is None or not np.all(np.isfinite(x)) else np.round(np.asarray(x, float), d).tolist()
 
@@ -114,6 +143,7 @@ def main():
             head = wr + RN.GRIP_TO_HEAD * us[:, q]
             from export_rallynet_viewer import face_normals
             fn = face_normals(np.where(pres[:, q, None], wr, np.nan), np.where(pres[:, q, None], us[:, q], np.nan))
+            fn = steady_face(fn, us[:, q], pres[:, q])
             fr = np.where(pres[:, q])[0]
             players.append({
                 "hand": "R" if hand[q] else "L",
