@@ -1,0 +1,10 @@
+0 d1026_0261 {'shuttle': 0.3764680917249713, 'shuttle_cov': 1.0, 'n_sh': 27, 'player': 0.08789202182987113, 'player_cov': 0.975626269465132, 'n_pl': 1477}
+50 d1026_0311 {'shuttle': 0.2447507051957673, 'shuttle_cov': 1.0, 'n_sh': 82, 'player': 0.12446937999644489, 'player_cov': 0.9439252336448598, 'n_pl': 963}
+100 d1026_0361 {'shuttle': 0.2585800625857395, 'shuttle_cov': 1.0, 'n_sh': 114, 'player': 0.1372531607755206, 'player_cov': 0.9491525423728814, 'n_pl': 1003}
+150 d1026_0726 {'shuttle': 0.14281873007208695, 'shuttle_cov': 1.0, 'n_sh': 62, 'player': 0.180078509284556, 'player_cov': 0.9658792650918635, 'n_pl': 762}
+200 d1026_0776 {'shuttle': 0.4102845766776814, 'shuttle_cov': 1.0, 'n_sh': 75, 'player': 0.10176072259004587, 'player_cov': 0.9598393574297188, 'n_pl': 996}
+250 sf_0349 {'shuttle': 0.5650441569885833, 'shuttle_cov': 1.0, 'n_sh': 109, 'player': 0.14254290882820103, 'player_cov': 0.9331210191082803, 'n_pl': 942}
+300 sf_0761 {'shuttle': 0.18980458356812396, 'shuttle_cov': 1.0, 'n_sh': 54, 'player': 0.08184144937634108, 'player_cov': 0.9152542372881356, 'n_pl': 531}
+350 sf_0811 {'shuttle': 0.13108191889522022, 'shuttle_cov': 1.0, 'n_sh': 47, 'player': 0.08641622783996886, 'player_cov': 0.9245810055865922, 'n_pl': 716}
+zs2      shuttle  389 rallies, median 0.243 m, coverage 1.00
+zs2      player   393 rallies, median 0.114 m, coverage 0.93

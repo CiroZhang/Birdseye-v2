@@ -8,6 +8,7 @@ on 2 of them, the model is trained on the other 8, and the 2 v1 validation match
 FEAT=shuttle (or shuttle+racket, racket) adds the TrackNet shuttle (outputs/bfmd/refined) as two extra "joints" per frame: where its camera
 ray meets the floor and the plane 2 m up (together they fix the ray), pelvis-relative and canonicalised like v1's
 joints, so v1's velocity/acceleration features and left-right mirroring apply unchanged (in_dim 360 -> 390).
+FEAT=own adds the student's own 3D shuttle and racket head (SD=t3own_sd, rallynet_bfmd_export.py OWN=1).
 FEAT=...racket adds each player's racket head (tools/bfmd_racket.py boxes, held in the VIMO hand as in the viewer:
 tools/fb_full_example.rackets), only while a racket box was seen near that hand, as one more point (+15 dims).
 Stroke-head options (off by default = v1): SHOT_SPREAD=k also labels the k frames either side of a hit with its
@@ -38,6 +39,9 @@ SHOT_LS = float(os.environ.get("SHOT_LS", "0"))
 SHOT_W = float(os.environ.get("SHOT_W", "0.3"))
 SELECT = os.environ.get("SELECT", "f1")
 REFIT = os.environ.get("REFIT") == "1"
+PAIR = os.environ.get("PAIR")  # second representation (a BFMD_DATA_ROOT-style dir, e.g. data/bfmd/k2d), joined joint-wise
+KEEP = os.environ.get("KEEP")  # file of rally tags (match::gN_rNNN): train/select/test on these only, so every
+                               # representation is scored on the same rallies
 HEAD = "".join(f"_{k}{v}" for k, v, d in (("sp", SHOT_SPREAD, 0), ("ls", SHOT_LS, 0), ("w", SHOT_W, 0.3), ("sel", SELECT, "f1")) if v != d) + ("_refit" if REFIT else "")
 TAG = os.environ.get("TAG", os.path.basename(os.path.normpath(tf.BASE)) + "_" + PROTOCOL + ("" if FEAT == "pose" else "_" + FEAT) + HEAD + ("" if SEED is None else "_s" + SEED))
 N_EPOCHS = int(os.environ.get("EPOCHS", "60"))
@@ -127,6 +131,27 @@ def add_racket(dataset):
     print(f"racket seen in {n_seen / max(n_all, 1):.3f} of player-frames", flush=True)
 
 
+def add_own(dataset):
+    """FEAT=own: the student's own 3D shuttle and racket head (tools/rallynet_bfmd_export.py OWN=1, in <sd>) as two
+    more points per side, in place of the TrackNet ray and the racket boxes."""
+    by_match, n_vis, n_all = {}, 0, 0
+    for tag in dataset["rallies"]:
+        by_match.setdefault(tag.split("::")[0], []).append(tag)
+    for m, tags in by_match.items():
+        src = json.load(open(os.path.join(SRC["sd"], m, "joints_selfdetected.json")))["rallies"]
+        for tag in tags:
+            r, o = dataset["rallies"][tag], src[tag.split("::")[1]]
+            n = r["n_frames"]
+            fit = lambda a: np.concatenate([a, np.full((max(0, n - len(a)), 3), np.nan)])[:n]
+            sh = fit(np.array(o["shuttle"], float))
+            n_vis += np.isfinite(sh[:, 0]).sum(); n_all += n
+            for side in ("top", "bottom"):
+                rk = fit(np.array(o.get("racket_" + side, []), float).reshape(-1, 3))
+                append_points(r, side, np.stack([sh, rk], 1))
+    tf.LR_PERM = tf.LR_PERM + [len(tf.LR_PERM), len(tf.LR_PERM) + 1]  # no left/right twins; mirror_lr flips x
+    print(f"own shuttle present in {n_vis / max(n_all, 1):.3f} of frames", flush=True)
+
+
 CAMTRACK = os.environ.get("CAMTRACK", "1") == "1"
 
 
@@ -155,6 +180,35 @@ def frame_cams(uid, n):
         if any(x is not None for x in cams):
             return cams + [None] * (n - len(cams))
     return cam
+
+
+def add_shuttle2d(dataset):
+    """FEAT=shuttle2d: the TrackNet shuttle in the image, for 2D representations (SD=k2d_sd): (u/H, 0, -v/H) as
+    tools/bfmd_export_2d.py writes the 2D joints, appended twice (the slots of add_shuttle's two ray points) and made
+    relative to the 2D pelvis, so a 2D input never sees court geometry or a 3D pelvis."""
+    n_vis = n_all = 0
+    for tag, r in dataset["rallies"].items():
+        m, rt = tag.split("::")
+        uid = SRC["uid"](m, rt)
+        n = r["n_frames"]
+        pts = np.full((n, 2, 3), np.nan)
+        p = os.path.join(SRC["out"], "refined", uid + ".json")
+        if os.path.exists(p):
+            cp = os.path.join(SRC["out"], "calib_bc", uid + ".json")
+            c = json.load(open(cp)).get("cam") if os.path.exists(cp) else None
+            H = c["size"][1] if c else 720
+            tr = json.load(open(p))
+            f = np.array(tr["frames"], int)
+            px = np.array(tr["px"], float).reshape(-1, 2)
+            k = (f >= 0) & (f < n) & np.isfinite(px).all(1)
+            q = np.c_[px[k, 0] / H, np.zeros(k.sum()), -px[k, 1] / H]
+            pts[f[k], 0] = q
+            pts[f[k], 1] = q
+        n_vis += np.isfinite(pts[:, 0, 0]).sum(); n_all += n
+        for side in ("top", "bottom"):
+            append_points(r, side, pts)
+    tf.LR_PERM = tf.LR_PERM + [len(tf.LR_PERM), len(tf.LR_PERM) + 1]  # as add_shuttle: no left/right twin
+    print(f"2D shuttle seen in {n_vis / max(n_all, 1):.3f} of frames", flush=True)
 
 
 def add_shuttle(dataset):
@@ -194,6 +248,43 @@ def add_shuttle(dataset):
                 append_points(r, side, ray)  # near-horizontal rays meet the floor far away: clipped
     tf.LR_PERM = tf.LR_PERM + [len(tf.LR_PERM), len(tf.LR_PERM) + 1]  # no left/right twin; mirror_lr only flips x
     print(f"shuttle visible in {n_vis / max(n_all, 1):.3f} of frames", flush=True)
+
+
+def add_pair(dataset):
+    """Concatenate a second representation's per-side _rel/_vel (same rallies, same frames) to this one's, in place;
+    rallies the other one lacks are dropped. Its joints mirror with the same left/right permutation."""
+    other = json.load(open(os.path.join(PAIR, "training_dataset_all_selfdetected.json")))["rallies"]
+    drop = []
+    for tag, r in dataset["rallies"].items():
+        o = other.get(tag)
+        if o is None or o["n_frames"] != r["n_frames"]:
+            drop.append(tag)
+            continue
+        for side in ("top", "bottom"):
+            for k in ("_rel", "_vel"):
+                r[side + k] = np.concatenate([np.array(r[side + k], np.float32), np.array(o[side + k], np.float32)], 1)
+            r["nan_frac_" + side] = max(r["nan_frac_" + side], o["nan_frac_" + side])
+    for t in drop:
+        del dataset["rallies"][t]
+    n = len(tf.LR_PERM)
+    tf.LR_PERM = tf.LR_PERM + [n + p for p in tf.LR_PERM]
+    print(f"paired with {PAIR}: {len(dataset['rallies'])} rallies kept, {len(drop)} dropped", flush=True)
+
+
+def eval_gt(model, ds):
+    """Stroke type at the labelled hit frames (classification given the true hit, not tied to hit detection):
+    accuracy, macro-F1 over the classes present, number of hits."""
+    P, Y = [], []
+    for smp in ds.samples:
+        _, pred = tf.predict_probs(model, *smp[:5])
+        k = smp[6] >= 0
+        P.append(pred[k]); Y.append(smp[6][k])
+    P, Y = np.concatenate(P), np.concatenate(Y)
+    f1 = []
+    for c in np.unique(Y):
+        tp, fp, fn = ((P == c) & (Y == c)).sum(), ((P == c) & (Y != c)).sum(), ((P != c) & (Y == c)).sum()
+        f1.append(2 * tp / (2 * tp + fp + fn))
+    return float((P == Y).mean()), float(np.mean(f1)), int(len(Y))
 
 
 def patch_shot_loss():
@@ -243,9 +334,19 @@ def main():
     if SEED is not None:
         torch.manual_seed(int(SEED)); np.random.seed(int(SEED))
     dataset = json.load(open(f"{tf.BASE}/training_dataset_all_selfdetected.json"))
-    set_pelvis(dataset)
+    if FEATS & {"shuttle", "shuttle2d", "racket", "own"}:  # the world pelvis is only needed to append world points
+        set_pelvis(dataset)
+    if KEEP:
+        keep = set(open(KEEP).read().split())
+        dataset["rallies"] = {t: r for t, r in dataset["rallies"].items() if t in keep}
+    if PAIR:
+        add_pair(dataset)
     if "shuttle" in FEATS:
         add_shuttle(dataset)
+    if "shuttle2d" in FEATS:
+        add_shuttle2d(dataset)
+    if "own" in FEATS:
+        add_own(dataset)
     if "racket" in FEATS:
         add_racket(dataset)
         tf.LR_PERM = tf.LR_PERM + [len(tf.LR_PERM)]
@@ -281,7 +382,12 @@ def main():
             print(f"epoch {epoch:2d}: train hit={tr_hit:.4f} shot={tr_shot:.3f} | sel [t={t}] P={p:.3f} R={r:.3f} "
                   f"F1={f1:.3f} shot_acc={sacc:.3f}", flush=True)
             log.append({"epoch": epoch, "thresh": t, "P": p, "R": r, "F1": f1, "shot_acc": sacc})
-            score = f1 + sacc if SELECT == "f1acc" else f1
+            if SELECT == "gtf1":
+                g_acc, g_f1, _ = eval_gt(model, sel_ds)
+                log[-1].update(gt_acc=g_acc, gt_f1=g_f1)
+                score = g_f1
+            else:
+                score = f1 + sacc if SELECT == "f1acc" else f1
             if score > best_f1:
                 best_f1, best_t, best_epoch = score, t, epoch
                 torch.save(model.state_dict(), ckpt)
@@ -297,10 +403,11 @@ def main():
         torch.save(model.state_dict(), ckpt)
         print(f"refit on {len(full_ds)} samples for {best_epoch + 1} epochs", flush=True)
     p, r, f1, sacc, tp, fp, fn = tf.evaluate_peaks(model, test_ds, best_t)
-    res = {"tag": TAG, "protocol": PROTOCOL, "data": tf.BASE, "feat": FEAT, "thresh": best_t, "epoch": best_epoch, "P": p, "R": r, "F1": f1,
+    g_acc, g_f1, g_n = eval_gt(model, test_ds)
+    res = {"gt_acc": g_acc, "gt_macro_f1": g_f1, "gt_hits": g_n, "n_test_samples": len(test_ds),"tag": TAG, "protocol": PROTOCOL, "data": tf.BASE, "feat": FEAT, "thresh": best_t, "epoch": best_epoch, "P": p, "R": r, "F1": f1,
            "shot_acc": sacc, "tp": tp, "fp": fp, "fn": fn, "test_matches": sorted(test_matches), "log": log}
     json.dump(res, open(os.path.join(OUT, TAG + ".json"), "w"), indent=1)
-    print(f"RESULT {TAG}: test P={p:.3f} R={r:.3f} F1={f1:.3f} shot_acc={sacc:.3f} (tp={tp} fp={fp} fn={fn})", flush=True)
+    print(f"RESULT {TAG}: test P={p:.3f} R={r:.3f} F1={f1:.3f} shot_acc={sacc:.3f} (tp={tp} fp={fp} fn={fn}) | at true hits: acc={g_acc:.3f} macroF1={g_f1:.3f} (n={g_n})", flush=True)
 
 
 if __name__ == "__main__":

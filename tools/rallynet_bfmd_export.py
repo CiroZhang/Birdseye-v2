@@ -7,7 +7,9 @@ hips and shoulders, feet = ankles, hands = wrists pushed 8 cm along the forearm.
 (y > NET_Y) with most frames, bottom = the near one.
 
 out  data/bfmd/<OUT_SD>/<match>/joints_selfdetected.json
-usage: python tools/rallynet_bfmd_export.py   (env TAG=v7, OUT_SD=rn_sd)"""
+usage: python tools/rallynet_bfmd_export.py   (env TAG=v7, OUT_SD=rn_sd, J24=1, OWN=1 adds keys shuttle and
+       racket_top/racket_bottom: the student's 3D shuttle and racket head, court frame in m, and hit_top/hit_bottom: its
+       per-frame hit probability for that side's player)"""
 import glob, json, os, sys
 
 import numpy as np
@@ -23,6 +25,7 @@ import train_rallynet as TR  # noqa: E402
 DATA = os.path.join(ROOT, "data", "bfmd")
 OUT_SD = os.path.join(DATA, os.environ.get("OUT_SD", "rn_sd"))
 TAG = os.environ.get("TAG", "v7")
+OWN = os.environ.get("OWN", "0") == "1"  # also write the student's own shuttle (T,3) and racket head per side (T,3), m
 
 
 def smpl24(K):
@@ -37,9 +40,13 @@ def smpl24(K):
                      hand(K[:, 9], K[:, 7]), hand(K[:, 10], K[:, 8])], 1)
 
 
+FILL = os.environ.get("FILL", "0") == "1"
+
+
 def main():
     model = TR.load_model(TAG)
     head = (lambda K: K) if TR.ARCH == "rallyphys" else RN.fix_head  # RallyPhys learns its face joints
+    use24 = os.environ.get("J24", "0") == "1"  # the student's own SMPL-24 joints (BODY24 models), not COCO-17 padded
     matches = open(os.path.join(DATA, "meta", "all_matches.txt")).read().split()
     for m in matches:
         rallies = json.load(open(os.path.join(DATA, "meta", m + ".rallies.json")))
@@ -51,9 +58,20 @@ def main():
                 continue
             f = TR.load_feats(p)
             res = TR.infer(model, f)
+            if use24:
+                res["joints"] = res["joints24"]
             n = r["end"] - r["start"] + 1
             pres = f["present"] > 0
-            joints = {}
+            joints, extra = {}, {}
+            if OWN:  # the student's racket head per slot (as tools/qa_scene.py) and its shuttle
+                hand = (np.nanmean(np.where(pres, res["hand_p"], np.nan), 0) > 0.5).astype(int)
+                u = res["u2"][:, np.arange(pres.shape[1]), hand]
+                u = u / (np.linalg.norm(u, axis=-1, keepdims=True) + 1e-9)
+                rk = res["w2"][:, np.arange(pres.shape[1]), hand] + 0.38 * u
+                S = np.full((n, 3), np.nan)
+                k = min(n, len(res["shuttle"]))
+                S[:k] = res["shuttle"][:k]
+                extra["shuttle"] = np.round(S, 4).tolist()
             for side in ("top", "bottom"):
                 best = None
                 for q in range(RN.P):
@@ -64,19 +82,43 @@ def main():
                         best = q
                 if best is None:
                     continue
-                K = head(res["joints"][:, best])
+                K = np.array(head(res["joints"][:, best]), copy=True)  # a copy: res stays intact for the gap fills
                 K[~pres[:, best]] = np.nan
+                RK = rk[:, best].copy() if OWN else None
+                if OWN:
+                    RK[~pres[:, best]] = np.nan
                 # the tracker can split one player into several slots: fill the gaps from the other slots on this side
                 for q in sorted(range(RN.P), key=lambda q: -pres[:, q].sum()):
                     if q == best or pres[:, q].sum() < 8 or (np.median(f["root"][pres[:, q], q, 1]) > NET_Y) != (side == "top"):
                         continue
                     gap = ~np.isfinite(K[:, 0, 0]) & pres[:, q]
                     K[gap] = head(res["joints"][gap, q])
+                    if OWN:
+                        RK[gap] = rk[gap, q]
+                if FILL:  # the student predicts every frame: keep its prediction through detector gaps inside the track
+                    have = np.flatnonzero(np.isfinite(K[:, 0, 0]))
+                    if len(have):
+                        gap = ~np.isfinite(K[:, 0, 0])
+                        gap[:have[0]] = gap[have[-1] + 1:] = False
+                        K[gap] = head(res["joints"][gap, best])
+                        if OWN:
+                            RK[gap] = rk[gap, best]
                 J = np.full((n, 24, 3), np.nan)
                 k = min(n, len(K))
-                J[:k] = smpl24(K[:k])
+                J[:k] = K[:k] if use24 else smpl24(K[:k])
                 joints[side] = np.round(J, 4).tolist()
-            out[tag] = {"start": r["start"], "end": r["end"], "joints": joints}
+                if OWN:
+                    R = np.full((n, 3), np.nan)
+                    R[:k] = RK[:k]
+                    extra["racket_" + side] = np.round(R, 4).tolist()
+                    # the student's own hit head: P(this side's player hits at this frame), any of its slots
+                    sides = [q for q in range(RN.P) if pres[:, q].sum() >= 8
+                             and (np.median(f["root"][pres[:, q], q, 1]) > NET_Y) == (side == "top")]
+                    hp = (1 / (1 + np.exp(-res["hit"][:, sides]))) * pres[:, sides]
+                    H = np.zeros(n)
+                    H[:min(n, len(hp))] = hp.max(1)[:n]
+                    extra["hit_" + side] = np.round(H, 4).tolist()
+            out[tag] = {"start": r["start"], "end": r["end"], "joints": joints, **extra}
         os.makedirs(os.path.join(OUT_SD, m), exist_ok=True)
         json.dump({"rallies": out}, open(os.path.join(OUT_SD, m, "joints_selfdetected.json"), "w"))
         print(f"{m}: {len(out)}/{len(rallies)} rallies", flush=True)

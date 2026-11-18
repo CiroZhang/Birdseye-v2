@@ -17,7 +17,7 @@ import torch
 torch.backends.cuda.matmul.allow_tf32 = True  # fp32 matmul with TF32 off stalls on the RTX 5080
 torch.backends.cudnn.allow_tf32 = False
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-TRAM = os.path.join(ROOT, "third_party", "tram")
+TRAM = os.environ.get("TRAM_DIR", os.path.join(ROOT, "third_party", "tram"))  # Killarney: the user's own TRAM install
 sys.path.insert(0, ROOT)
 sys.path.insert(0, TRAM)
 
@@ -48,8 +48,8 @@ from birdseye_v2.players import ANKLE_H, load_pose, players_3d
 
 FB_SET = os.environ.get("FB_SET", "bench")
 CLIPS = os.path.join(ROOT, "data", *{"bench": ("fbbench", "hf_video_clips_qa"), "train": ("fb20k", "clips"),
-                                     "bfmd": ("bfmd", "clips")}[FB_SET])  # bfmd: BFMD singles rally clips
-OUT = os.path.join(ROOT, "outputs", {"bench": "fb", "train": "fb20k", "bfmd": "bfmd"}[FB_SET])
+                                     "bfmd": ("bfmd", "clips"), "cctv": ("cctv", "clips")}[FB_SET])  # bfmd: BFMD singles rally clips; cctv: tools/cctv_rallies.py TV views
+OUT = os.path.join(ROOT, "outputs", {"bench": "fb", "train": "fb20k", "bfmd": "bfmd", "cctv": "cctv"}[FB_SET])
 CALIB_DIR = os.environ.get("CALIB_DIR", "calib_bc")  # BirdsCourt (tools/fb_birdscourt.py); "calib" = old fb_calibrate
 VIMO_DIR = os.environ.get("VIMO_DIR", "vimo_bc")
 CAMTRACK = os.environ.get("CAMTRACK", "1") == "1"  # use <out>/camtrack/<uid>.json per-frame cameras when present
@@ -246,6 +246,76 @@ def side_boxes(cam, poses):
     return out
 
 
+N4 = os.environ.get("VIMO_N4", "0") == "1"  # doubles: two people per side (top0, top1, bottom0, bottom1)
+SLOTS = ("top0", "top1", "bottom0", "bottom1") if N4 else ("top", "bottom")
+
+
+def side_boxes4(cam, poses):
+    """As side_boxes, but up to two on-court people per side (doubles), each slot kept on the same person by
+    nearest feet to its previous pick (optimal assignment per frame)."""
+    from scipy.optimize import linear_sum_assignment
+    cams = cam if isinstance(cam, list) else [cam] * len(poses)
+    T = len(poses)
+    out = {s: {"box": np.zeros((T, 4), np.float32), "valid": np.zeros(T, bool), "ankle": np.full((T, 2), np.nan)} for s in SLOTS}
+    last = {s: None for s in SLOTS}
+    for i, kps in enumerate(poses):
+        if cams[i] is None:
+            continue
+        ppl = players_3d(cams[i], kps)
+        for side in ("top", "bottom"):
+            cand = [p for p in ppl if (p["foot"][1] < NET_Y) == (side == "bottom")][:4]
+            slots = [side + "0", side + "1"]
+            if not cand:
+                continue
+            C = np.array([[0.0 if last[s] is None else np.linalg.norm(p["foot"] - last[s]) for p in cand] for s in slots])
+            C += np.array([[0.0 if last[s] is not None else 5.0 for _ in cand] for s in slots])  # tracked slots first
+            ri, ci = linear_sum_assignment(C)
+            for r, c in zip(ri, ci):
+                s, p = slots[r], cand[c]
+                if last[s] is not None and np.linalg.norm(p["foot"] - last[s]) > 2.5:
+                    continue
+                last[s] = p["foot"]
+                k = p["kp"][p["kp"][:, 2] > 0.3]
+                x1, y1 = k[:, :2].min(0); x2, y2 = k[:, :2].max(0)
+                pad = 0.1 * max(x2 - x1, y2 - y1)
+                out[s]["box"][i] = [x1 - pad, y1 - pad, x2 + pad, y2 + pad]; out[s]["valid"][i] = True
+                a = p["kp"][[15, 16]]; a = a[a[:, 2] > 0.3]
+                if len(a):
+                    out[s]["ankle"][i] = a[:, :2].mean(0)
+    return out
+
+
+def mv_boxes(uid, poses, keep):
+    """VIMO_MV=1: boxes from the multi-camera player tracks (tools/mv_track.py) -- the TV detection each track holds;
+    near players fill bottom0/bottom1, far players top0/top1 (singles: bottom0, top0)."""
+    m = np.load(os.path.join(ROOT, "outputs", "cctv", "mv_track", uid + ".npz"))
+    K, foot, tvi = int(m["K"]), m["foot"], m["tv_idx"]
+    T = len(poses)
+    out = {s: {"box": np.zeros((T, 4), np.float32), "valid": np.zeros(T, bool), "ankle": np.full((T, 2), np.nan)} for s in SLOTS}
+    side = [np.nanmedian(foot[:, k, 1]) > NET_Y for k in range(K)]
+    names = {}
+    for k in range(K):
+        sd = "top" if side[k] else "bottom"
+        names[k] = sd + str(sum(1 for j in range(k) if side[j] == side[k]))
+    for i in range(T):
+        f = int(keep[i])
+        if f >= len(tvi):
+            continue
+        for k in range(K):
+            j = int(tvi[f, k])
+            if j < 0 or j >= len(poses[i]) or names[k] not in out:
+                continue
+            kp = poses[i][j]; g = kp[kp[:, 2] > 0.3]
+            if len(g) < 5:
+                continue
+            x1, y1 = g[:, :2].min(0); x2, y2 = g[:, :2].max(0); pad = 0.1 * max(x2 - x1, y2 - y1)
+            o = out[names[k]]; o["box"][i] = [x1 - pad, y1 - pad, x2 + pad, y2 + pad]; o["valid"][i] = True
+            a = kp[[15, 16]]; a = a[a[:, 2] > 0.3]
+            if len(a):
+                o["ankle"][i] = a[:, :2].mean(0)
+    return out
+
+
 def ground_correct(cam, joints, ankle_px, stable_px=None):
     """Birdseye v1's correction: shift the body so VIMO's lower ankle sits where a pixel-stable 2D
     ankle ray-casts (at ankle height), MAD-reject outliers, interpolate, floor/height clamp."""
@@ -327,11 +397,14 @@ def main():
                     cv2.imwrite(fn, im, [cv2.IMWRITE_JPEG_QUALITY, 95]); files.append(fn)
                 i += 1
             T = len(files)
-            if cams is not None:
+            sbf = side_boxes4 if N4 else side_boxes
+            if os.environ.get("VIMO_MV") == "1":
+                sb = mv_boxes(uid, poses[:T], keep[:T])
+            elif cams is not None:
                 cams = cams[:T] + [None] * (T - len(cams[:T]))
-                sb = side_boxes(cams, poses[:T])
+                sb = sbf(cams, poses[:T])
             elif trusted:
-                sb = side_boxes(cam, poses[:T])
+                sb = sbf(cam, poses[:T])
             else:
                 sys.path.insert(0, os.path.join(ROOT, "tools"))
                 from fb_calibrate import court_region
@@ -339,7 +412,7 @@ def main():
                 sb = side_boxes_image(poses[:T], court_region(med))
             R = cam.R
             res_out = {"frames": keep[:T], "trusted_calib": trusted, "camtrack": cams is not None}
-            for s in ("top", "bottom"):
+            for s in SLOTS:
                 sb[s]["box"], sb[s]["valid"] = fill_box_gaps(sb[s]["box"][:T].copy(), sb[s]["valid"][:T].copy())
                 v = sb[s]["valid"][:T]
                 joints = np.full((T, 24, 3), np.nan)
@@ -368,8 +441,7 @@ def main():
                 res_out[s] = joints.astype(np.float32)
             os.makedirs(os.path.dirname(dst), exist_ok=True)
             np.savez_compressed(dst, **res_out)
-            print(f"{uid} {T}f top {np.isfinite(res_out['top'][:, 0, 0]).mean():.2f} "
-                  f"bottom {np.isfinite(res_out['bottom'][:, 0, 0]).mean():.2f} {time.time() - t0:.0f}s", flush=True)
+            print(f"{uid} {T}f " + " ".join(f"{s} {np.isfinite(res_out[s][:, 0, 0]).mean():.2f}" for s in SLOTS) + f" {time.time() - t0:.0f}s", flush=True)
         except Exception as e:
             print("FAILED", uid, repr(e), flush=True)
         finally:

@@ -253,7 +253,7 @@ def prior(dev):
     global _PRIOR
     import os
     if _PRIOR is None:
-        path = os.path.join(os.path.dirname(__file__), "..", "outputs", "rallynet", "poseprior.pt")
+        path = os.path.join(os.path.dirname(__file__), "..", "outputs", "rallynet", os.environ.get("PRIOR_FILE", "poseprior.pt"))
         if os.environ.get("PRIOR", "1") == "1" and os.path.exists(path):
             from .poseprior import PosePrior
             _PRIOR = PosePrior().to(dev)

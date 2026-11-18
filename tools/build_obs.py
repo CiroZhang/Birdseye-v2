@@ -19,7 +19,8 @@ sys.path.insert(0, os.path.join(ROOT, "tools"))
 OUT = os.path.join(ROOT, "outputs", "rally_obs")
 SET = sys.argv[1] if len(sys.argv) > 1 else "drone"
 MAX_T = 2000  # frames
-CLIPS = {"bfmd": ("bfmd", "clips"), "fb": ("fbbench", "hf_video_clips_qa"), "fb20k": ("fb20k", "clips")}
+CLIPS = {"bfmd": ("bfmd", "clips"), "fb": ("fbbench", "hf_video_clips_qa"), "fb20k": ("fb20k", "clips"),
+         "cctv": ("cctv", "clips")}  # CCTV multi-camera sessions, TV view (tools/cctv_rallies.py)
 
 
 def video_info(path):

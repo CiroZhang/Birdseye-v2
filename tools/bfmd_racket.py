@@ -7,13 +7,15 @@ import glob, os, sys, time
 import numpy as np
 import torch
 
-torch.backends.cudnn.allow_tf32 = False  # lazy-JIT stall on the RTX 5080 (TF32 conv kernels JIT-compile for minutes on the RTX 5080)
+torch.backends.cudnn.allow_tf32 = False  # lazy-JIT stall on the RTX 5080 (see NOTES.md)
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 from ultralytics import YOLO
 
 FB_SET = os.environ.get("FB_SET", "bfmd")  # bench: FBBench clips (as tools/fb_track.py)
-CLIPS = os.path.join(ROOT, "data", *{"bfmd": ("bfmd", "clips"), "bench": ("fbbench", "hf_video_clips_qa")}[FB_SET])
-OUT = os.path.join(ROOT, "outputs", {"bfmd": "bfmd", "bench": "fb"}[FB_SET], os.environ.get("RACKET_DIR", "racket"))
+CLIPS = os.path.join(ROOT, "data", *{"bfmd": ("bfmd", "clips"), "bench": ("fbbench", "hf_video_clips_qa"), "cctv": ("cctv", "clips"),
+                                    "cctv_p1": ("cctv", "clips_p1"), "cctv_p2": ("cctv", "clips_p2"), "cctv_side": ("cctv", "clips_side")}[FB_SET])
+OUT = os.path.join(ROOT, "outputs", {"bfmd": "bfmd", "bench": "fb", "cctv": "cctv", "cctv_p1": "cctv_p1", "cctv_p2": "cctv_p2", "cctv_side": "cctv_side"}[FB_SET],
+                   os.environ.get("RACKET_DIR", "racket"))
 IMGSZ = int(os.environ.get("IMGSZ", "1280"))
 model = YOLO(os.path.join(ROOT, "third_party", "weights", "yolov8x.pt"))
 uids = sys.argv[1:] or sorted(os.path.basename(p)[:-4] for p in glob.glob(os.path.join(CLIPS, "*.mp4")))

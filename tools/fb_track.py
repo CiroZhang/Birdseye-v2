@@ -8,7 +8,7 @@ import glob, json, os, sys, time
 import numpy as np
 import torch
 
-torch.backends.cudnn.allow_tf32 = False  # lazy-JIT stall on the RTX 5080 (TF32 conv kernels JIT-compile for minutes on the RTX 5080)
+torch.backends.cudnn.allow_tf32 = False  # lazy-JIT stall on the RTX 5080 (see NOTES.md)
 torch.backends.cuda.matmul.allow_tf32 = True
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, ROOT)
@@ -20,8 +20,11 @@ from birdseye_v2.tracknet import detect, load_model, read_small_frames, write_cs
 # FB_SET=bench (FBBench clips), train (FineBadminton-20K rally clips, tools/fb20k_prep.py) or bfmd (BFMD singles rallies)
 FB_SET = os.environ.get("FB_SET", "bench")
 CLIPS = os.path.join(ROOT, "data", *{"bench": ("fbbench", "hf_video_clips_qa"), "train": ("fb20k", "clips"),
-                                     "bfmd": ("bfmd", "clips")}[FB_SET])  # bfmd: BFMD singles rally clips
-OUT = os.path.join(ROOT, "outputs", {"bench": "fb", "train": "fb20k", "bfmd": "bfmd"}[FB_SET])
+                                     "bfmd": ("bfmd", "clips"), "cctv": ("cctv", "clips"),
+                                     "cctv_side": ("cctv", "clips_side"), "cctv_p1": ("cctv", "clips_p1"),
+                                     "cctv_p2": ("cctv", "clips_p2")}[FB_SET])  # bfmd: BFMD singles rally clips; cctv(_side): tools/cctv_rallies.py TV / side views
+OUT = os.path.join(ROOT, "outputs", {"bench": "fb", "train": "fb20k", "bfmd": "bfmd", "cctv": "cctv", "cctv_side": "cctv_side",
+                             "cctv_p1": "cctv_p1", "cctv_p2": "cctv_p2"}[FB_SET])  # cctv_p1/p2: the two player (PTZ) cameras
 
 tn = load_model()
 POSE_IMGSZ = int(os.environ.get("POSE_IMGSZ", "768"))  # 1280 finds the far broadcast player in 94% of frames vs 72%

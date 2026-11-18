@@ -1,0 +1,2 @@
+drone zs2      shuttle  288 rallies, median 0.762 m, coverage 1.00
+drone zs2      player   288 rallies, median 0.238 m, coverage 0.99

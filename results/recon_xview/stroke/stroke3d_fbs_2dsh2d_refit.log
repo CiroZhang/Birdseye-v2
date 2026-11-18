@@ -1,0 +1,10 @@
+2D shuttle seen in 0.719 of frames
+loaded in 56s: hits train 7736 sel 2007 test 2907
+C:\Users\sshuser\desktop\Birdseye-v2\tools\stroke3d.py:193: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  self.enc = nn.TransformerEncoder(layer, L)
+C:\Users\sshuser\desktop\Birdseye-v2\tools\stroke3d.py:193: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  self.enc = nn.TransformerEncoder(layer, L)
+RESULT fbs_2dsh2d_w32_refit seed 0: epoch 21 sel macroF1=0.625 | test at true hits acc=0.829 macroF1=0.803 (n=2907)
+RESULT fbs_2dsh2d_w32_refit seed 1: epoch 21 sel macroF1=0.621 | test at true hits acc=0.832 macroF1=0.804 (n=2907)
+RESULT fbs_2dsh2d_w32_refit seed 2: epoch 25 sel macroF1=0.632 | test at true hits acc=0.825 macroF1=0.800 (n=2907)
+MEAN fbs_2dsh2d_w32_refit: acc 82.8 +- 0.4, macroF1 80.2 +- 0.2

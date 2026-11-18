@@ -1,0 +1,24 @@
+fbs_rgb_videomae_refit_s1: train 7736 sel 2007 test 2907 hits; test ['0012', '0013', '0015', '0022', '0029', '0032', '0033', '0057', '0066']
+2026-11-17 18:21:05.084076: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-11-17 18:21:07.638628: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+epoch  0: train loss 1.761 | sel acc=0.466 macroF1=0.336
+epoch  1: train loss 1.478 | sel acc=0.487 macroF1=0.362
+epoch  2: train loss 1.367 | sel acc=0.471 macroF1=0.305
+epoch  3: train loss 1.248 | sel acc=0.524 macroF1=0.411
+epoch  4: train loss 1.156 | sel acc=0.548 macroF1=0.415
+epoch  5: train loss 1.047 | sel acc=0.523 macroF1=0.441
+epoch  6: train loss 0.925 | sel acc=0.527 macroF1=0.461
+epoch  7: train loss 0.815 | sel acc=0.557 macroF1=0.482
+epoch  8: train loss 0.731 | sel acc=0.559 macroF1=0.474
+epoch  9: train loss 0.668 | sel acc=0.542 macroF1=0.464
+epoch 10: train loss 0.624 | sel acc=0.547 macroF1=0.471
+epoch 11: train loss 0.611 | sel acc=0.547 macroF1=0.471
+epoch  0: train loss 1.736
+epoch  1: train loss 1.472
+epoch  2: train loss 1.337
+epoch  3: train loss 1.217
+epoch  4: train loss 1.074
+epoch  5: train loss 0.931
+epoch  6: train loss 0.809
+epoch  7: train loss 0.748
+RESULT fbs_rgb_videomae_refit_s1: at true hits: acc=0.661 macroF1=0.601 (n=2907) epoch 7

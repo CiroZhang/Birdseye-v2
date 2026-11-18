@@ -1,0 +1,296 @@
+rgb: hits train 7732 sel 2007 test 2907
+C:\Users\sshuser\desktop\Birdseye-v2\tools\stroke3d.py:193: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  self.enc = nn.TransformerEncoder(layer, L)
+epoch  0: loss 2.265 (692s) | sel acc=0.213 macroF1=0.037
+epoch  1: loss 2.180 (63s) | sel acc=0.213 macroF1=0.087
+epoch  2: loss 1.994 (35s) | sel acc=0.330 macroF1=0.188
+epoch  3: loss 1.757 (35s) | sel acc=0.410 macroF1=0.258
+epoch  4: loss 1.579 (34s) | sel acc=0.427 macroF1=0.297
+epoch  5: loss 1.472 (34s) | sel acc=0.512 macroF1=0.356
+epoch  6: loss 1.377 (34s) | sel acc=0.502 macroF1=0.369
+epoch  7: loss 1.311 (34s) | sel acc=0.559 macroF1=0.385
+epoch  8: loss 1.265 (34s) | sel acc=0.534 macroF1=0.434
+epoch  9: loss 1.224 (34s) | sel acc=0.567 macroF1=0.473
+epoch 10: loss 1.190 (34s) | sel acc=0.581 macroF1=0.460
+epoch 11: loss 1.153 (34s) | sel acc=0.603 macroF1=0.492
+epoch 12: loss 1.125 (34s) | sel acc=0.591 macroF1=0.511
+epoch 13: loss 1.103 (34s) | sel acc=0.611 macroF1=0.519
+epoch 14: loss 1.081 (34s) | sel acc=0.582 macroF1=0.484
+epoch 15: loss 1.067 (34s) | sel acc=0.601 macroF1=0.536
+epoch 16: loss 1.037 (31s) | sel acc=0.603 macroF1=0.510
+epoch 17: loss 1.025 (30s) | sel acc=0.610 macroF1=0.525
+epoch 18: loss 1.004 (30s) | sel acc=0.592 macroF1=0.497
+epoch 19: loss 0.993 (30s) | sel acc=0.628 macroF1=0.553
+epoch 20: loss 0.972 (30s) | sel acc=0.612 macroF1=0.504
+epoch 21: loss 0.951 (30s) | sel acc=0.618 macroF1=0.538
+epoch 22: loss 0.938 (30s) | sel acc=0.626 macroF1=0.551
+epoch 23: loss 0.911 (30s) | sel acc=0.613 macroF1=0.534
+epoch 24: loss 0.897 (30s) | sel acc=0.621 macroF1=0.526
+epoch 25: loss 0.877 (30s) | sel acc=0.613 macroF1=0.531
+epoch 26: loss 0.855 (30s) | sel acc=0.604 macroF1=0.532
+epoch 27: loss 0.837 (30s) | sel acc=0.604 macroF1=0.521
+epoch 28: loss 0.816 (30s) | sel acc=0.617 macroF1=0.539
+epoch 29: loss 0.793 (30s) | sel acc=0.587 macroF1=0.514
+epoch 30: loss 0.768 (30s) | sel acc=0.611 macroF1=0.548
+epoch 31: loss 0.748 (30s) | sel acc=0.610 macroF1=0.542
+epoch 32: loss 0.733 (30s) | sel acc=0.606 macroF1=0.535
+epoch 33: loss 0.708 (30s) | sel acc=0.619 macroF1=0.544
+epoch 34: loss 0.699 (30s) | sel acc=0.606 macroF1=0.536
+epoch 35: loss 0.676 (30s) | sel acc=0.589 macroF1=0.521
+epoch 36: loss 0.661 (30s) | sel acc=0.598 macroF1=0.526
+epoch 37: loss 0.646 (30s) | sel acc=0.612 macroF1=0.534
+epoch 38: loss 0.626 (30s) | sel acc=0.598 macroF1=0.530
+epoch 39: loss 0.618 (31s) | sel acc=0.600 macroF1=0.533
+epoch 40: loss 0.600 (31s) | sel acc=0.606 macroF1=0.539
+epoch 41: loss 0.591 (31s) | sel acc=0.610 macroF1=0.550
+epoch 42: loss 0.578 (31s) | sel acc=0.604 macroF1=0.540
+epoch 43: loss 0.575 (31s) | sel acc=0.601 macroF1=0.537
+epoch 44: loss 0.565 (31s) | sel acc=0.610 macroF1=0.541
+epoch 45: loss 0.557 (31s) | sel acc=0.608 macroF1=0.538
+epoch 46: loss 0.550 (31s) | sel acc=0.613 macroF1=0.546
+epoch 47: loss 0.546 (31s) | sel acc=0.613 macroF1=0.549
+epoch 48: loss 0.543 (31s) | sel acc=0.610 macroF1=0.544
+epoch 49: loss 0.539 (31s) | sel acc=0.621 macroF1=0.554
+epoch 50: loss 0.538 (31s) | sel acc=0.618 macroF1=0.552
+epoch 51: loss 0.533 (32s) | sel acc=0.617 macroF1=0.548
+epoch 52: loss 0.530 (32s) | sel acc=0.620 macroF1=0.549
+epoch 53: loss 0.532 (33s) | sel acc=0.620 macroF1=0.551
+epoch 54: loss 0.529 (30s) | sel acc=0.622 macroF1=0.553
+epoch 55: loss 0.529 (30s) | sel acc=0.616 macroF1=0.549
+epoch 56: loss 0.529 (30s) | sel acc=0.617 macroF1=0.549
+epoch 57: loss 0.528 (30s) | sel acc=0.615 macroF1=0.547
+epoch 58: loss 0.528 (30s) | sel acc=0.615 macroF1=0.547
+epoch 59: loss 0.527 (30s) | sel acc=0.619 macroF1=0.549
+C:\Users\sshuser\desktop\Birdseye-v2\tools\stroke3d.py:193: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  self.enc = nn.TransformerEncoder(layer, L)
+epoch  0: loss 2.253 (44s)
+epoch  1: loss 2.158 (37s)
+epoch  2: loss 1.873 (37s)
+epoch  3: loss 1.623 (38s)
+epoch  4: loss 1.479 (37s)
+epoch  5: loss 1.379 (37s)
+epoch  6: loss 1.315 (37s)
+epoch  7: loss 1.259 (37s)
+epoch  8: loss 1.219 (37s)
+epoch  9: loss 1.182 (37s)
+epoch 10: loss 1.159 (37s)
+epoch 11: loss 1.135 (37s)
+epoch 12: loss 1.102 (37s)
+epoch 13: loss 1.088 (37s)
+epoch 14: loss 1.070 (37s)
+epoch 15: loss 1.047 (37s)
+epoch 16: loss 1.024 (37s)
+epoch 17: loss 1.004 (37s)
+epoch 18: loss 0.995 (37s)
+epoch 19: loss 0.977 (37s)
+epoch 20: loss 0.957 (37s)
+epoch 21: loss 0.935 (37s)
+epoch 22: loss 0.912 (37s)
+epoch 23: loss 0.894 (37s)
+epoch 24: loss 0.870 (37s)
+epoch 25: loss 0.848 (37s)
+epoch 26: loss 0.825 (37s)
+epoch 27: loss 0.800 (37s)
+epoch 28: loss 0.783 (38s)
+epoch 29: loss 0.759 (37s)
+epoch 30: loss 0.730 (37s)
+epoch 31: loss 0.720 (37s)
+epoch 32: loss 0.689 (37s)
+epoch 33: loss 0.676 (37s)
+epoch 34: loss 0.651 (37s)
+epoch 35: loss 0.630 (37s)
+epoch 36: loss 0.623 (37s)
+epoch 37: loss 0.604 (37s)
+epoch 38: loss 0.599 (37s)
+epoch 39: loss 0.588 (37s)
+epoch 40: loss 0.578 (37s)
+epoch 41: loss 0.567 (37s)
+epoch 42: loss 0.567 (37s)
+epoch 43: loss 0.561 (37s)
+epoch 44: loss 0.557 (37s)
+epoch 45: loss 0.555 (37s)
+epoch 46: loss 0.554 (37s)
+epoch 47: loss 0.550 (37s)
+epoch 48: loss 0.550 (37s)
+epoch 49: loss 0.550 (37s)
+RESULT fbs_rgbscratch_w32_refit seed 0: epoch 49 sel macroF1=0.554 | test at true hits acc=0.695 macroF1=0.632 (n=2907)
+epoch  0: loss 2.272 (35s) | sel acc=0.233 macroF1=0.081
+epoch  1: loss 2.209 (39s) | sel acc=0.235 macroF1=0.098
+epoch  2: loss 2.080 (35s) | sel acc=0.287 macroF1=0.151
+epoch  3: loss 1.831 (35s) | sel acc=0.439 macroF1=0.258
+epoch  4: loss 1.637 (35s) | sel acc=0.387 macroF1=0.262
+epoch  5: loss 1.484 (35s) | sel acc=0.415 macroF1=0.301
+epoch  6: loss 1.380 (35s) | sel acc=0.532 macroF1=0.433
+epoch  7: loss 1.306 (35s) | sel acc=0.552 macroF1=0.435
+epoch  8: loss 1.263 (35s) | sel acc=0.585 macroF1=0.471
+epoch  9: loss 1.211 (33s) | sel acc=0.567 macroF1=0.445
+epoch 10: loss 1.181 (34s) | sel acc=0.588 macroF1=0.500
+epoch 11: loss 1.163 (35s) | sel acc=0.606 macroF1=0.495
+epoch 12: loss 1.129 (35s) | sel acc=0.579 macroF1=0.455
+epoch 13: loss 1.110 (35s) | sel acc=0.606 macroF1=0.527
+epoch 14: loss 1.094 (35s) | sel acc=0.589 macroF1=0.505
+epoch 15: loss 1.061 (35s) | sel acc=0.596 macroF1=0.529
+epoch 16: loss 1.047 (34s) | sel acc=0.589 macroF1=0.491
+epoch 17: loss 1.028 (34s) | sel acc=0.625 macroF1=0.526
+epoch 18: loss 1.012 (34s) | sel acc=0.624 macroF1=0.552
+epoch 19: loss 0.989 (34s) | sel acc=0.633 macroF1=0.548
+epoch 20: loss 0.971 (35s) | sel acc=0.644 macroF1=0.571
+epoch 21: loss 0.961 (35s) | sel acc=0.646 macroF1=0.564
+epoch 22: loss 0.939 (35s) | sel acc=0.637 macroF1=0.569
+epoch 23: loss 0.923 (34s) | sel acc=0.635 macroF1=0.557
+epoch 24: loss 0.902 (34s) | sel acc=0.635 macroF1=0.565
+epoch 25: loss 0.885 (35s) | sel acc=0.627 macroF1=0.550
+epoch 26: loss 0.861 (34s) | sel acc=0.616 macroF1=0.549
+epoch 27: loss 0.846 (35s) | sel acc=0.622 macroF1=0.548
+epoch 28: loss 0.824 (35s) | sel acc=0.640 macroF1=0.566
+epoch 29: loss 0.805 (35s) | sel acc=0.628 macroF1=0.556
+epoch 30: loss 0.788 (31s) | sel acc=0.630 macroF1=0.555
+epoch 31: loss 0.768 (30s) | sel acc=0.631 macroF1=0.553
+epoch 32: loss 0.740 (30s) | sel acc=0.630 macroF1=0.560
+epoch 33: loss 0.732 (30s) | sel acc=0.637 macroF1=0.566
+epoch 34: loss 0.714 (30s) | sel acc=0.625 macroF1=0.547
+epoch 35: loss 0.690 (31s) | sel acc=0.625 macroF1=0.556
+epoch 36: loss 0.679 (31s) | sel acc=0.632 macroF1=0.556
+epoch 37: loss 0.660 (31s) | sel acc=0.632 macroF1=0.554
+epoch 38: loss 0.644 (31s) | sel acc=0.637 macroF1=0.564
+epoch 39: loss 0.628 (31s) | sel acc=0.632 macroF1=0.562
+epoch 40: loss 0.621 (31s) | sel acc=0.655 macroF1=0.587
+epoch 41: loss 0.607 (30s) | sel acc=0.643 macroF1=0.573
+epoch 42: loss 0.593 (31s) | sel acc=0.630 macroF1=0.557
+epoch 43: loss 0.581 (31s) | sel acc=0.627 macroF1=0.555
+epoch 44: loss 0.574 (31s) | sel acc=0.635 macroF1=0.561
+epoch 45: loss 0.562 (31s) | sel acc=0.638 macroF1=0.565
+epoch 46: loss 0.560 (31s) | sel acc=0.637 macroF1=0.567
+epoch 47: loss 0.553 (31s) | sel acc=0.628 macroF1=0.558
+epoch 48: loss 0.547 (31s) | sel acc=0.630 macroF1=0.559
+epoch 49: loss 0.548 (31s) | sel acc=0.629 macroF1=0.559
+epoch 50: loss 0.543 (31s) | sel acc=0.629 macroF1=0.559
+epoch 51: loss 0.537 (31s) | sel acc=0.630 macroF1=0.560
+epoch 52: loss 0.536 (31s) | sel acc=0.634 macroF1=0.564
+epoch 53: loss 0.536 (31s) | sel acc=0.632 macroF1=0.560
+epoch 54: loss 0.534 (31s) | sel acc=0.630 macroF1=0.560
+epoch 55: loss 0.534 (31s) | sel acc=0.638 macroF1=0.567
+epoch 56: loss 0.534 (32s) | sel acc=0.637 macroF1=0.566
+epoch 57: loss 0.533 (33s) | sel acc=0.632 macroF1=0.560
+epoch 58: loss 0.532 (33s) | sel acc=0.637 macroF1=0.566
+epoch 59: loss 0.532 (33s) | sel acc=0.635 macroF1=0.565
+epoch  0: loss 2.261 (42s)
+epoch  1: loss 2.193 (42s)
+epoch  2: loss 1.951 (41s)
+epoch  3: loss 1.664 (41s)
+epoch  4: loss 1.506 (39s)
+epoch  5: loss 1.392 (37s)
+epoch  6: loss 1.325 (37s)
+epoch  7: loss 1.269 (37s)
+epoch  8: loss 1.224 (37s)
+epoch  9: loss 1.187 (37s)
+epoch 10: loss 1.157 (38s)
+epoch 11: loss 1.127 (37s)
+epoch 12: loss 1.113 (37s)
+epoch 13: loss 1.090 (37s)
+epoch 14: loss 1.067 (37s)
+epoch 15: loss 1.044 (37s)
+epoch 16: loss 1.025 (37s)
+epoch 17: loss 0.996 (37s)
+epoch 18: loss 0.982 (37s)
+epoch 19: loss 0.958 (37s)
+epoch 20: loss 0.934 (37s)
+epoch 21: loss 0.915 (38s)
+epoch 22: loss 0.894 (38s)
+epoch 23: loss 0.869 (38s)
+epoch 24: loss 0.841 (38s)
+epoch 25: loss 0.821 (39s)
+epoch 26: loss 0.796 (39s)
+epoch 27: loss 0.767 (38s)
+epoch 28: loss 0.746 (38s)
+epoch 29: loss 0.722 (38s)
+epoch 30: loss 0.706 (38s)
+epoch 31: loss 0.683 (38s)
+epoch 32: loss 0.667 (38s)
+epoch 33: loss 0.649 (38s)
+epoch 34: loss 0.637 (38s)
+epoch 35: loss 0.627 (39s)
+epoch 36: loss 0.620 (39s)
+epoch 37: loss 0.616 (39s)
+epoch 38: loss 0.609 (39s)
+epoch 39: loss 0.609 (39s)
+epoch 40: loss 0.609 (39s)
+RESULT fbs_rgbscratch_w32_refit seed 1: epoch 40 sel macroF1=0.587 | test at true hits acc=0.693 macroF1=0.638 (n=2907)
+epoch  0: loss 2.269 (31s) | sel acc=0.225 macroF1=0.062
+epoch  1: loss 2.191 (31s) | sel acc=0.225 macroF1=0.087
+epoch  2: loss 1.954 (31s) | sel acc=0.379 macroF1=0.213
+epoch  3: loss 1.721 (31s) | sel acc=0.408 macroF1=0.252
+epoch  4: loss 1.558 (32s) | sel acc=0.462 macroF1=0.292
+epoch  5: loss 1.439 (32s) | sel acc=0.502 macroF1=0.360
+epoch  6: loss 1.354 (33s) | sel acc=0.496 macroF1=0.389
+epoch  7: loss 1.297 (33s) | sel acc=0.539 macroF1=0.401
+epoch  8: loss 1.242 (33s) | sel acc=0.559 macroF1=0.453
+epoch  9: loss 1.205 (33s) | sel acc=0.561 macroF1=0.422
+epoch 10: loss 1.179 (32s) | sel acc=0.570 macroF1=0.465
+epoch 11: loss 1.137 (33s) | sel acc=0.610 macroF1=0.513
+epoch 12: loss 1.104 (33s) | sel acc=0.599 macroF1=0.508
+epoch 13: loss 1.082 (33s) | sel acc=0.593 macroF1=0.463
+epoch 14: loss 1.067 (33s) | sel acc=0.578 macroF1=0.493
+epoch 15: loss 1.045 (33s) | sel acc=0.637 macroF1=0.572
+epoch 16: loss 1.029 (33s) | sel acc=0.580 macroF1=0.489
+epoch 17: loss 1.012 (33s) | sel acc=0.614 macroF1=0.543
+epoch 18: loss 0.996 (33s) | sel acc=0.596 macroF1=0.500
+epoch 19: loss 0.972 (33s) | sel acc=0.638 macroF1=0.569
+epoch 20: loss 0.968 (33s) | sel acc=0.628 macroF1=0.540
+epoch 21: loss 0.943 (33s) | sel acc=0.635 macroF1=0.540
+epoch 22: loss 0.928 (33s) | sel acc=0.614 macroF1=0.544
+epoch 23: loss 0.906 (33s) | sel acc=0.602 macroF1=0.551
+epoch 24: loss 0.891 (33s) | sel acc=0.626 macroF1=0.553
+epoch 25: loss 0.860 (33s) | sel acc=0.634 macroF1=0.551
+epoch 26: loss 0.843 (33s) | sel acc=0.628 macroF1=0.551
+epoch 27: loss 0.822 (33s) | sel acc=0.618 macroF1=0.551
+epoch 28: loss 0.798 (33s) | sel acc=0.633 macroF1=0.547
+epoch 29: loss 0.780 (33s) | sel acc=0.628 macroF1=0.550
+epoch 30: loss 0.757 (33s) | sel acc=0.626 macroF1=0.552
+epoch 31: loss 0.741 (31s) | sel acc=0.634 macroF1=0.563
+epoch 32: loss 0.728 (30s) | sel acc=0.619 macroF1=0.553
+epoch 33: loss 0.702 (30s) | sel acc=0.625 macroF1=0.559
+epoch 34: loss 0.691 (30s) | sel acc=0.621 macroF1=0.533
+epoch 35: loss 0.674 (30s) | sel acc=0.629 macroF1=0.548
+epoch 36: loss 0.656 (30s) | sel acc=0.633 macroF1=0.554
+epoch 37: loss 0.638 (30s) | sel acc=0.625 macroF1=0.548
+epoch 38: loss 0.631 (30s) | sel acc=0.633 macroF1=0.559
+epoch 39: loss 0.611 (30s) | sel acc=0.630 macroF1=0.557
+epoch 40: loss 0.601 (30s) | sel acc=0.621 macroF1=0.555
+epoch 41: loss 0.589 (30s) | sel acc=0.626 macroF1=0.557
+epoch 42: loss 0.585 (30s) | sel acc=0.618 macroF1=0.537
+epoch 43: loss 0.571 (30s) | sel acc=0.637 macroF1=0.563
+epoch 44: loss 0.563 (30s) | sel acc=0.620 macroF1=0.549
+epoch 45: loss 0.558 (30s) | sel acc=0.630 macroF1=0.553
+epoch 46: loss 0.551 (30s) | sel acc=0.627 macroF1=0.552
+epoch 47: loss 0.546 (30s) | sel acc=0.636 macroF1=0.563
+epoch 48: loss 0.541 (30s) | sel acc=0.637 macroF1=0.563
+epoch 49: loss 0.537 (30s) | sel acc=0.631 macroF1=0.558
+epoch 50: loss 0.536 (30s) | sel acc=0.632 macroF1=0.554
+epoch 51: loss 0.535 (30s) | sel acc=0.626 macroF1=0.551
+epoch 52: loss 0.535 (30s) | sel acc=0.631 macroF1=0.556
+epoch 53: loss 0.531 (30s) | sel acc=0.633 macroF1=0.553
+epoch 54: loss 0.530 (30s) | sel acc=0.629 macroF1=0.553
+epoch 55: loss 0.529 (31s) | sel acc=0.632 macroF1=0.558
+epoch 56: loss 0.528 (31s) | sel acc=0.629 macroF1=0.554
+epoch 57: loss 0.530 (31s) | sel acc=0.633 macroF1=0.558
+epoch 58: loss 0.527 (31s) | sel acc=0.632 macroF1=0.557
+epoch 59: loss 0.527 (31s) | sel acc=0.629 macroF1=0.553
+epoch  0: loss 2.267 (39s)
+epoch  1: loss 2.052 (39s)
+epoch  2: loss 1.689 (39s)
+epoch  3: loss 1.549 (39s)
+epoch  4: loss 1.438 (39s)
+epoch  5: loss 1.354 (39s)
+epoch  6: loss 1.285 (39s)
+epoch  7: loss 1.231 (39s)
+epoch  8: loss 1.175 (39s)
+epoch  9: loss 1.131 (39s)
+epoch 10: loss 1.082 (39s)
+epoch 11: loss 1.041 (39s)
+epoch 12: loss 1.008 (39s)
+epoch 13: loss 0.973 (39s)
+epoch 14: loss 0.958 (39s)
+epoch 15: loss 0.943 (39s)
+RESULT fbs_rgbscratch_w32_refit seed 2: epoch 15 sel macroF1=0.572 | test at true hits acc=0.692 macroF1=0.618 (n=2907)
+MEAN fbs_rgbscratch_w32_refit: acc 69.3 +- 0.1, macroF1 63.0 +- 1.0

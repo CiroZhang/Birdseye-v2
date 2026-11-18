@@ -17,6 +17,11 @@ from .shuttle3d import (FPS, clean_track, detect_hits, fit_rally, hand_candidate
                         merge_explained, near_player_px, segment_shots, split_unexplained)
 
 SEG_RMS = 16.0  # px, split/merge threshold (dev sweep: plateau from 12)
+import os
+SPLIT_GIVEN = float(os.environ.get("SPLIT_GIVEN", "0"))  # px: also split GIVEN-hit shots one flight cannot explain (0 = off)
+SPLIT_NEAR_PX = float(os.environ.get("SPLIT_NEAR_PX", "1e9"))  # ... keeping a split only if a racket is this close (px)
+SPLIT_MIN_OBS = int(os.environ.get("SPLIT_MIN_OBS", "5"))  # ... and each side has this many detections
+SPLIT_FREE = os.environ.get("SPLIT_FREE", "0") == "1"  # ... and gets no hand anchor (keeps the hitters' alternation)
 
 
 def _interp(frames, px, t):
@@ -67,10 +72,20 @@ def reconstruct_rally(cam, frames, px, poses, hits=None, rackets=None, hit_model
             hits = [float(f_c[0])] + hits
     frames, px = clean_track(frames, px, hits)
     shots = segment_shots(frames, hits, px)
+    if not detected and SPLIT_GIVEN > 0:  # a hit the hit source missed: the track turns where no flight explains it
+        old = {a for a, _ in shots}
+        new = split_unexplained(cam, frames, px, shots, max_rms=SPLIT_GIVEN, min_obs=SPLIT_MIN_OBS)
+        # ... and only next to a player: a turn in mid-air is a track glitch, not a hit
+        keep = [a for a, _ in new if a in old or min((c.get("px", 0.0) for c in _candidates(cam, poses, frames, px, a, rackets)),
+                                                      default=1e9) <= SPLIT_NEAR_PX]
+        ends = [b for _, b in new]
+        shots = [(a, (keep[i + 1] if i + 1 < len(keep) else ends[-1])) for i, a in enumerate(keep)]
     if detected:
         shots = merge_explained(cam, frames, px, split_unexplained(cam, frames, px, shots, max_rms=SEG_RMS),
                                 max_rms=SEG_RMS)
     cands = [_candidates(cam, poses, frames, px, a, rackets) for a, _ in shots]
+    if not detected and SPLIT_GIVEN > 0 and SPLIT_FREE:  # a split the track asked for is a flight boundary, not an anchored
+        cands = [c if a in old else [] for c, (a, _) in zip(cands, shots)]  # hit: it must not shift the sides' alternation
     if detected:  # a shot start that is not next to a player is not a hit: no anchor
         for i, (a, _) in enumerate(shots):
             f = int(round(a))

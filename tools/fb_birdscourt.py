@@ -25,8 +25,8 @@ from birdseye_v2.court import COURT_CORNERS, Camera, draw_court, init_from_corne
 
 FB_SET = os.environ.get("FB_SET", "bench")
 CLIPS = os.path.join(ROOT, "data", *{"bench": ("fbbench", "hf_video_clips_qa"), "train": ("fb20k", "clips"),
-                                     "bfmd": ("bfmd", "clips")}[FB_SET])  # bfmd: BFMD singles rally clips
-OUT = os.path.join(ROOT, "outputs", {"bench": "fb", "train": "fb20k", "bfmd": "bfmd"}[FB_SET])
+                                     "bfmd": ("bfmd", "clips"), "cctv": ("cctv", "clips")}[FB_SET])  # bfmd: BFMD singles rally clips; cctv: tools/cctv_rallies.py TV views
+OUT = os.path.join(ROOT, "outputs", {"bench": "fb", "train": "fb20k", "bfmd": "bfmd", "cctv": "cctv"}[FB_SET])
 W, L, NET_Y, SS, LS, SIN = 6.1, 13.4, 6.7, 1.98, 0.76, 0.46
 POINTS_3D = {  # BirdsCourt's names (its camera_calibration.COURT_POINTS_3D); same court frame as ours
     "P1_TL": (0, L), "P2_BL": (0, 0), "P3_BR": (W, 0), "P4_TR": (W, L),
@@ -181,12 +181,16 @@ def fit_camera(pts, size, fit_dist=False):
     best = None
     for f0 in (900, 1300, 1800, 2500, 3500):  # multi-start over focal length
         c0 = init_from_corners([tuple(corners[i]) for i in range(4)], size, float(f0))
+        if not np.all(np.isfinite(np.r_[c0.f, c0.rvec, c0.tvec])):  # degenerate corner quad at this focal start
+            continue
 
         def res(p):
             return Camera(p[0], p[1:4], p[4:7], size).project(X).ravel() - uv.ravel()
         r = least_squares(res, np.r_[c0.f, c0.rvec, c0.tvec], loss="soft_l1", f_scale=3.0)
         if best is None or r.cost < best.cost:
             best = r
+    if best is None:
+        return None, {"valid": False, "n_pts": len(names), "reason": "degenerate corners"}
     cam = Camera(best.x[0], best.x[1:4], best.x[4:7], size)
     if fit_dist:
         def res_d(p):

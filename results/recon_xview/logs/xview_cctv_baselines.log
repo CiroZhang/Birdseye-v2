@@ -1,0 +1,6 @@
+errors 90 [{'error': "KeyError('bottom0_raw is not a file in the archive')"}, {'error': "KeyError('bottom0_raw is not a file in the archive')"}, {'error': "KeyError('bottom0_raw is not a file in the archive')"}]
+mt       shuttle  299 rallies, median 2.424 m, coverage 0.78
+v1       shuttle  279 rallies, median 1.927 m, coverage 0.55
+v2fit    shuttle  300 rallies, median 1.570 m, coverage 0.99
+tram     player   303 rallies, median 0.659 m, coverage 0.91
+v1p      player   303 rallies, median 0.135 m, coverage 0.93

@@ -38,10 +38,11 @@ def _rays(cam, uv):
 
 def track(cams, poses, T, max_p=MAX_P, min_frac=0.15):
     """Identities across frames by ground position (Hungarian on foot distance) -> list of (T,17,3) keypoints."""
-    tracks = []
+    tracks, frames_people = [], []
     for f in range(T):
         cam = _cam(cams, f)
         people = []
+        frames_people.append(people)
         if cam is not None and f < len(poses):
             for kp in poses[f]:
                 ft = foot_point(cam, kp)
@@ -73,13 +74,94 @@ def track(cams, poses, T, max_p=MAX_P, min_frac=0.15):
     tracks = _join(tracks, cams)
     seen = [np.isfinite(t["kp"][:, 0, 0]).sum() for t in tracks]
     tracks, seen = _dedupe(tracks, seen, cams)
-    keep = [k for k in np.argsort(seen)[::-1][:max_p] if seen[k] >= min_frac * T]
-    return [tracks[k]["kp"] for k in sorted(keep)]
+    keep, off = _players(tracks, seen, cams, T, max_p, min_frac)
+    if off:  # detections standing where an officials' track stands are never handed to a player slot
+        frames_people = [[p for p in ps if all(np.linalg.norm(p[0] - o) > OFFICIAL_NEAR for o in off)] for ps in frames_people]
+    return _fill_slots([tracks[k]["kp"] for k in sorted(keep)], frames_people, cams)
 
 
-def _join(tracks, cams, max_gap=150):
+OFFICIAL_OUT = 0.3  # m: median foot this far outside the court lines ...
+OFFICIAL_SPREAD = 1.0  # m: ... while the feet stay within this (10th-90th percentile extent): an umpire or line judge
+OFFICIAL_NEAR = 0.6  # m
+
+
+def _out_of_court(ft):
+    """Distance (m) of ground points (N,2) outside the court lines (0 inside)."""
+    dx = np.maximum(np.maximum(-ft[:, 0], ft[:, 0] - W), 0)
+    dy = np.maximum(np.maximum(-ft[:, 1], ft[:, 1] - L), 0)
+    return np.hypot(dx, dy)
+
+
+def _players(tracks, seen, cams, T, max_p, min_frac):
+    """The player tracks, most-seen first. A track that stands still outside the court lines for the whole rally is
+    an official (umpire, service or line judge), not a player; players cover ground. With four slots (doubles) a
+    side of the net takes at most two players."""
+    keep, off, side_n = [], [], {0: 0, 1: 0}
+    for k in np.argsort(seen)[::-1]:
+        if seen[k] < min_frac * T or len(keep) >= max_p:
+            break
+        fs = [foot_point(_cam(cams, f), tracks[k]["kp"][f]) for f in np.where(np.isfinite(tracks[k]["kp"][:, 0, 0]))[0]]
+        fs = np.array([x for x in fs if x is not None])
+        if len(fs) < 5:
+            continue
+        med = np.median(fs, axis=0)
+        spread = np.linalg.norm(np.percentile(fs, 90, axis=0) - np.percentile(fs, 10, axis=0))
+        if np.median(_out_of_court(fs)) > OFFICIAL_OUT and spread < OFFICIAL_SPREAD:
+            off.append(med)
+            continue
+        side = int(med[1] > L / 2)
+        if max_p == 4 and side_n[side] >= 2:
+            continue
+        side_n[side] += 1
+        keep.append(k)
+    return keep, off
+
+
+def _fill_slots(kps, frames_people, cams, gate=0.5, per_frame=0.15, max_gate=3.0):
+    """The players are a fixed set: where a kept track is unseen but a detection in that frame belongs to no kept
+    track (a piece the identity bookkeeping lost), give it to the nearest unseen track (forward, then backward for a
+    track's leading frames), gated by distance to that track's nearest sighting."""
+    if not kps:
+        return kps
+    T = len(kps[0])
+    feet = np.full((len(kps), T, 2), np.nan)
+    for q, kp in enumerate(kps):
+        for f in np.where(np.isfinite(kp[:, 0, 0]))[0]:
+            ft = foot_point(_cam(cams, f), kp[f])
+            if ft is not None:
+                feet[q, f] = ft
+    for order in (range(T), range(T - 1, -1, -1)):
+        last = [None] * len(kps)  # (frame, foot) of the latest sighting in this pass's direction
+        for f in order:
+            miss = []
+            for q in range(len(kps)):
+                if np.isfinite(feet[q, f, 0]):
+                    last[q] = (f, feet[q, f])
+                elif last[q] is not None:
+                    miss.append(q)
+            people = frames_people[f] if f < len(frames_people) else []
+            if not miss or not people:
+                continue
+            taken = [feet[q, f] for q in range(len(kps)) if np.isfinite(feet[q, f, 0])]
+            free = [i for i, (ft, _) in enumerate(people) if all(np.linalg.norm(ft - x) > 0.3 for x in taken)]
+            if not free:
+                continue
+            Cm = np.array([[np.linalg.norm(people[i][0] - last[q][1]) for q in miss] for i in free])
+            g = np.array([min(gate + per_frame * abs(f - last[q][0]), max_gate) for q in miss])  # players move < 0.3 m a frame
+            r, c = linear_sum_assignment(Cm)
+            for i, j in zip(r, c):
+                if Cm[i, j] < g[j]:
+                    q = miss[j]
+                    kps[q][f] = people[free[i]][1]
+                    feet[q, f] = people[free[i]][0]
+                    last[q] = (f, feet[q, f])
+    return kps
+
+
+def _join(tracks, cams, max_gap=150, max_overlap=15):
     """Join track pieces that do not overlap in time when one ends near where the other starts (a player lost
-    for longer than MAX_GAP, or briefly mismatched)."""
+    for longer than MAX_GAP, or briefly mismatched). Pieces may overlap by a few frames (the old track briefly held
+    a neighbour's detection before the player's own track restarted); from its start the later piece wins."""
     def ends(t):
         ok = np.where(np.isfinite(t["kp"][:, 0, 0]))[0]
         a, b = ok[0], ok[-1]
@@ -93,14 +175,23 @@ def _join(tracks, cams, max_gap=150):
         best = None
         for i, (a1, b1, _, fb1) in enumerate(info):
             for j, (a2, b2, fa2, _) in enumerate(info):
-                if i == j or a2 <= b1 or a2 - b1 > max_gap or fb1 is None or fa2 is None:
+                if i == j or a2 <= a1 or a2 < b1 - max_overlap or a2 - b1 > max_gap or fb1 is None or fa2 is None:
                     continue
+                if b1 >= a2 and b2 <= b1:
+                    continue  # the later piece is not a continuation (ends inside the first)
+                if a2 <= b1:  # overlap: i where j starts
+                    fs = np.where(np.isfinite(tracks[i]["kp"][:a2 + 1, 0, 0]))[0]  # i's last sighting up to there
+                    fi = foot_point(_cam(cams, fs[-1]), tracks[i]["kp"][fs[-1]]) if len(fs) else None
+                    if fi is None:
+                        continue
+                    fb1 = fi
                 d = np.linalg.norm(fa2 - fb1)
                 if d < 1.2 + 0.03 * (a2 - b1) and (best is None or d < best[0]):
                     best = (d, i, j)
         if best:
             _, i, j = best
             ok = np.isfinite(tracks[j]["kp"][:, 0, 0])
+            tracks[i]["kp"][info[j][0]:] = np.nan  # an overlap: from its start the later piece wins
             tracks[i]["kp"][ok] = tracks[j]["kp"][ok]
             tracks.pop(j)
             changed = True

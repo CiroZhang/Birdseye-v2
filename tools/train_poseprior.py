@@ -1,4 +1,6 @@
-"""Train birdseye_v2.poseprior on the two-drone triangulated poses of DroneData's dev matches (outputs/pose3d).
+"""Train birdseye_v2.poseprior on the two-drone triangulated poses of DroneData (outputs/pose3d/<match>).
+PP_MATCHES (env, "+"-separated) restricts the matches, e.g. the training matches only so that the evaluation matches
+(BD15-BD23) are never seen; PP_OUT names the output (default poseprior.pt; the default run used ALL matches).
 Only poses with all 12 body joints triangulated are used; 10% of rallies are held out to report the
 reconstruction error on unseen poses. Output: outputs/rallynet/poseprior.pt
 usage: python tools/train_poseprior.py   (env EPOCHS=200)"""
@@ -17,6 +19,10 @@ FLIP = [1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10]  # body joints (COCO 5-16) left <-
 
 def main():
     ps = sorted(glob.glob(os.path.join(ROOT, "outputs", "pose3d", "*", "*.npz")))
+    if os.environ.get("PP_MATCHES"):
+        keep = set(os.environ["PP_MATCHES"].split("+"))
+        ps = [p for p in ps if os.path.basename(os.path.dirname(p)) in keep]
+        print("matches", sorted(keep), len(ps), "rallies", flush=True)
     rng = np.random.default_rng(0)
     held = set(rng.choice(len(ps), max(1, len(ps) // 10), replace=False))
     tr, te = [], []
@@ -47,7 +53,7 @@ def main():
             with torch.no_grad():
                 print(ep, "train %.3f m  held-out %.3f m  (mean per-joint reconstruction)" % (
                     (m(Xtr[:5000]) - Xtr[:5000]).norm(dim=-1).mean(), (m(Xte) - Xte).norm(dim=-1).mean()), flush=True)
-    torch.save(m.state_dict(), os.path.join(ROOT, "outputs", "rallynet", "poseprior.pt"))
+    torch.save(m.state_dict(), os.path.join(ROOT, "outputs", "rallynet", os.environ.get("PP_OUT", "poseprior.pt")))
 
 
 if __name__ == "__main__":

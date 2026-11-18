@@ -1,0 +1,158 @@
+Tue Nov 17 21:20:02 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.178.04             Driver Version: 580.178.04     CUDA Version: 13.0     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA L40S                    Off |   00000000:E3:00.0 Off |                    0 |
+| N/A   51C    P8             41W /  350W |       0MiB /  46068MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+Model name:                              Intel(R) Xeon(R) Gold 6338 CPU @ 2.00GHz
+[21:20:03] phase A
+{'python': '3.12.3', 'host': 'kn117', 'gpu': 'NVIDIA L40S, 46068 MiB, 580.178.04', 'cpu': 'Intel(R) Xeon(R) Gold 6338 CPU @ 2.00GHz', 'slurm_cpus': '16', 'slurm_job': '7740216', 'torch': '2.14.0+cu130', 'cuda': '13.0', 'cudnn': 92400, 'torch_gpu': 'NVIDIA L40S'}
+Loading weights from local directory
+load {'S_tracknet': 1.0316974799497984, 'P_yolov8x_pose': 0.7361125510069542, 'R_yolov8x': 0.6185004449798726, 'B1_yolov8x': 0.38043065898818895, 'C1_vggt1b': 40.000052243995015}
+d1026_0281 {"n_frames": 175, "video_s": 7.0, "decode_s_untimed": 0.3746417670045048, "P_pose1280": 9.1107, "R_racket": 11.0373, "B1_v1_person_boxes": 5.5967, "S_tracknet_resize": 2.0668, "S_tracknet": 2.1892, "S_refine": 0.8721, "C2_birdscourt_prep": 0.7274, "C1_vggt": 2.3187}
+wrote /scratch/ciro/timing/out/phase_a.json
+d1026_0261 {"n_frames": 450, "video_s": 18.0, "decode_s_untimed": 1.0682955909869634, "P_pose1280": 15.8834, "R_racket": 26.2506, "B1_v1_person_boxes": 12.8487, "S_tracknet_resize": 5.5747, "S_tracknet": 4.3485, "S_refine": 1.0935, "C2_birdscourt_prep": 1.2886, "C1_vggt": 4.478}
+wrote /scratch/ciro/timing/out/phase_a.json
+d1026_0262 {"n_frames": 420, "video_s": 16.8, "decode_s_untimed": 0.8573055400047451, "P_pose1280": 14.8988, "R_racket": 24.5985, "B1_v1_person_boxes": 12.0173, "S_tracknet_resize": 5.1762, "S_tracknet": 4.0851, "S_refine": 2.0183, "C2_birdscourt_prep": 1.3264, "C1_vggt": 4.0182}
+wrote /scratch/ciro/timing/out/phase_a.json
+d1026_0263 {"n_frames": 230, "video_s": 9.2, "decode_s_untimed": 0.3727554939687252, "P_pose1280": 8.308, "R_racket": 13.3486, "B1_v1_person_boxes": 6.6068, "S_tracknet_resize": 2.8006, "S_tracknet": 2.2216, "S_refine": 1.2081, "C2_birdscourt_prep": 0.865, "C1_vggt": 1.9964}
+wrote /scratch/ciro/timing/out/phase_a.json
+d1026_0264 {"n_frames": 150, "video_s": 6.0, "decode_s_untimed": 0.3090024789562449, "P_pose1280": 5.4511, "R_racket": 8.8171, "B1_v1_person_boxes": 4.3309, "S_tracknet_resize": 1.8175, "S_tracknet": 1.6347, "S_refine": 0.8275, "C2_birdscourt_prep": 0.6358, "C1_vggt": 1.3157}
+wrote /scratch/ciro/timing/out/phase_a.json
+d1026_0265 {"n_frames": 175, "video_s": 7.0, "decode_s_untimed": 0.333467782009393, "P_pose1280": 6.1498, "R_racket": 10.1545, "B1_v1_person_boxes": 4.9841, "S_tracknet_resize": 2.117, "S_tracknet": 1.688, "S_refine": 0.9688, "C2_birdscourt_prep": 0.7341, "C1_vggt": 1.5321}
+wrote /scratch/ciro/timing/out/phase_a.json
+d1026_0266 {"n_frames": 225, "video_s": 9.0, "decode_s_untimed": 0.3682737090275623, "P_pose1280": 7.9882, "R_racket": 13.2677, "B1_v1_person_boxes": 6.4887, "S_tracknet_resize": 2.7289, "S_tracknet": 2.1965, "S_refine": 1.0952, "C2_birdscourt_prep": 0.829, "C1_vggt": 1.9581}
+wrote /scratch/ciro/timing/out/phase_a.json
+d1026_0267 {"n_frames": 100, "video_s": 4.0, "decode_s_untimed": 0.15949215198634192, "P_pose1280": 3.5387, "R_racket": 5.8365, "B1_v1_person_boxes": 2.8467, "S_tracknet_resize": 1.1674, "S_tracknet": 0.9358, "S_refine": 0.7045, "C2_birdscourt_prep": 0.5342, "C1_vggt": 0.8792}
+wrote /scratch/ciro/timing/out/phase_a.json
+d1026_0268 {"n_frames": 105, "video_s": 4.2, "decode_s_untimed": 0.1566563899978064, "P_pose1280": 3.75, "R_racket": 6.1596, "B1_v1_person_boxes": 3.0259, "S_tracknet_resize": 1.2621, "S_tracknet": 0.9658, "S_refine": 0.8269, "C2_birdscourt_prep": 0.5349, "C1_vggt": 0.942}
+wrote /scratch/ciro/timing/out/phase_a.json
+d1026_0269 {"n_frames": 305, "video_s": 12.2, "decode_s_untimed": 0.4483207410085015, "P_pose1280": 10.786, "R_racket": 17.8695, "B1_v1_person_boxes": 8.7694, "S_tracknet_resize": 3.7793, "S_tracknet": 2.9624, "S_refine": 1.5623, "C2_birdscourt_prep": 1.0496, "C1_vggt": 2.791}
+wrote /scratch/ciro/timing/out/phase_a.json
+d1026_0270 {"n_frames": 290, "video_s": 11.6, "decode_s_untimed": 0.574267923948355, "P_pose1280": 10.2428, "R_racket": 16.7995, "B1_v1_person_boxes": 8.2918, "S_tracknet_resize": 3.5809, "S_tracknet": 2.8077, "S_refine": 1.6461, "C2_birdscourt_prep": 1.0544, "C1_vggt": 2.5797}
+wrote /scratch/ciro/timing/out/phase_a.json
+d1026_0271 {"n_frames": 825, "video_s": 33.0, "decode_s_untimed": 1.6241320699919015, "P_pose1280": 29.1663, "R_racket": 48.1786, "B1_v1_person_boxes": 23.7735, "S_tracknet_resize": 10.3365, "S_tracknet": 7.9968, "S_refine": 3.4322, "C2_birdscourt_prep": 2.5554, "C1_vggt": 8.7089}
+wrote /scratch/ciro/timing/out/phase_a.json
+d1026_0272 {"n_frames": 100, "video_s": 4.0, "decode_s_untimed": 0.2118286769837141, "P_pose1280": 3.5488, "R_racket": 5.814, "B1_v1_person_boxes": 2.8743, "S_tracknet_resize": 1.1672, "S_tracknet": 0.8438, "S_refine": 0.6702, "C2_birdscourt_prep": 0.5507, "C1_vggt": 0.8712}
+wrote /scratch/ciro/timing/out/phase_a.json
+d1026_0273 {"n_frames": 250, "video_s": 10.0, "decode_s_untimed": 0.3158976580016315, "P_pose1280": 8.8253, "R_racket": 14.7134, "B1_v1_person_boxes": 7.2115, "S_tracknet_resize": 3.0127, "S_tracknet": 2.4662, "S_refine": 1.3389, "C2_birdscourt_prep": 0.896, "C1_vggt": 2.1824}
+wrote /scratch/ciro/timing/out/phase_a.json
+d1026_0274 {"n_frames": 135, "video_s": 5.4, "decode_s_untimed": 0.25500808702781796, "P_pose1280": 4.7865, "R_racket": 7.8503, "B1_v1_person_boxes": 3.8872, "S_tracknet_resize": 1.6332, "S_tracknet": 1.2748, "S_refine": 0.8454, "C2_birdscourt_prep": 0.6007, "C1_vggt": 1.1872}
+wrote /scratch/ciro/timing/out/phase_a.json
+d1026_0275 {"n_frames": 140, "video_s": 5.6, "decode_s_untimed": 0.21982696204213426, "P_pose1280": 4.9704, "R_racket": 8.1419, "B1_v1_person_boxes": 4.0409, "S_tracknet_resize": 1.7137, "S_tracknet": 1.367, "S_refine": 0.8851, "C2_birdscourt_prep": 0.5899, "C1_vggt": 1.1804}
+wrote /scratch/ciro/timing/out/phase_a.json
+d1026_0276 {"n_frames": 105, "video_s": 4.2, "decode_s_untimed": 0.17095427197637036, "P_pose1280": 3.729, "R_racket": 6.0574, "B1_v1_person_boxes": 3.006, "S_tracknet_resize": 1.2298, "S_tracknet": 0.8918, "S_refine": 0.6853, "C2_birdscourt_prep": 0.5145, "C1_vggt": 0.9381}
+wrote /scratch/ciro/timing/out/phase_a.json
+d1026_0277 {"n_frames": 165, "video_s": 6.6, "decode_s_untimed": 0.21034053398761898, "P_pose1280": 5.884, "R_racket": 9.8468, "B1_v1_person_boxes": 4.7272, "S_tracknet_resize": 1.9411, "S_tracknet": 1.5819, "S_refine": 1.0826, "C2_birdscourt_prep": 0.748, "C1_vggt": 1.454}
+wrote /scratch/ciro/timing/out/phase_a.json
+d1026_0278 {"n_frames": 540, "video_s": 21.6, "decode_s_untimed": 1.0833642419893295, "P_pose1280": 19.2054, "R_racket": 31.4024, "B1_v1_person_boxes": 15.7432, "S_tracknet_resize": 6.7385, "S_tracknet": 5.2498, "S_refine": 2.4147, "C2_birdscourt_prep": 1.5438, "C1_vggt": 5.155}
+wrote /scratch/ciro/timing/out/phase_a.json
+d1026_0279 {"n_frames": 180, "video_s": 7.2, "decode_s_untimed": 0.2613777400110848, "P_pose1280": 6.3713, "R_racket": 10.4209, "B1_v1_person_boxes": 5.2327, "S_tracknet_resize": 2.1927, "S_tracknet": 1.7254, "S_refine": 1.1881, "C2_birdscourt_prep": 0.7701, "C1_vggt": 1.5495}
+wrote /scratch/ciro/timing/out/phase_a.json
+d1026_0280 {"n_frames": 615, "video_s": 24.6, "decode_s_untimed": 1.1128927660174668, "P_pose1280": 21.64, "R_racket": 35.8692, "B1_v1_person_boxes": 17.9367, "S_tracknet_resize": 7.577, "S_tracknet": 5.963, "S_refine": 2.3638, "C2_birdscourt_prep": 1.6825, "C1_vggt": 6.1172}
+wrote /scratch/ciro/timing/out/phase_a.json
+[21:37:30] phase B
+d1026_0281 {"C2_birdscourt_detect": 21.712295043980703, "C2_n_pts": 22, "C1_monotrack_detect": 31.954308272048365, "C1_mt_ok": true}
+d1026_0261 {"C2_birdscourt_detect": 23.113493898010347, "C2_n_pts": 22, "C1_monotrack_detect": 20.88588953402359, "C1_mt_ok": true}
+d1026_0262 {"C2_birdscourt_detect": 22.395745793008246, "C2_n_pts": 22, "C1_monotrack_detect": 22.177087407035287, "C1_mt_ok": true}
+d1026_0263 {"C2_birdscourt_detect": 20.46274925902253, "C2_n_pts": 22, "C1_monotrack_detect": 30.094639609975275, "C1_mt_ok": true}
+d1026_0264 {"C2_birdscourt_detect": 22.359785022970755, "C2_n_pts": 22, "C1_monotrack_detect": 14.044179752003402, "C1_mt_ok": true}
+d1026_0265 {"C2_birdscourt_detect": 17.8480311910389, "C2_n_pts": 22, "C1_monotrack_detect": 22.245361425972078, "C1_mt_ok": true}
+d1026_0266 {"C2_birdscourt_detect": 21.3009357820265, "C2_n_pts": 22, "C1_monotrack_detect": 34.6547968829982, "C1_mt_ok": true}
+d1026_0267 {"C2_birdscourt_detect": 23.900044549955055, "C2_n_pts": 22, "C1_monotrack_detect": 24.43865971796913, "C1_mt_ok": true}
+d1026_0268 {"C2_birdscourt_detect": 28.66661471797852, "C2_n_pts": 22, "C1_monotrack_detect": 22.813235265028197, "C1_mt_ok": true}
+d1026_0269 {"C2_birdscourt_detect": 22.28317915799562, "C2_n_pts": 22, "C1_monotrack_detect": 14.056588405976072, "C1_mt_ok": true}
+d1026_0270 {"C2_birdscourt_detect": 22.128968152974267, "C2_n_pts": 22, "C1_monotrack_detect": 19.899848518020008, "C1_mt_ok": true}
+d1026_0271 {"C2_birdscourt_detect": 15.10820794000756, "C2_n_pts": 22, "C1_monotrack_detect": 13.836255547008477, "C1_mt_ok": true}
+d1026_0272 {"C2_birdscourt_detect": 37.06668394804001, "C2_n_pts": 22, "C1_monotrack_detect": 20.23114180797711, "C1_mt_ok": true}
+d1026_0273 {"C2_birdscourt_detect": 15.316238345985767, "C2_n_pts": 22, "C1_monotrack_detect": 22.377202283998486, "C1_mt_ok": true}
+d1026_0274 {"C2_birdscourt_detect": 24.697024666005746, "C2_n_pts": 22, "C1_monotrack_detect": 16.227969985979144, "C1_mt_ok": true}
+d1026_0275 {"C2_birdscourt_detect": 28.795233078009915, "C2_n_pts": 22, "C1_monotrack_detect": 25.011726965021808, "C1_mt_ok": true}
+d1026_0276 {"C2_birdscourt_detect": 26.338515609968454, "C2_n_pts": 22, "C1_monotrack_detect": 25.804587678052485, "C1_mt_ok": true}
+d1026_0277 {"C2_birdscourt_detect": 21.607982971996535, "C2_n_pts": 22, "C1_monotrack_detect": 10.969927207974251, "C1_mt_ok": true}
+d1026_0278 {"C2_birdscourt_detect": 27.833587269997224, "C2_n_pts": 22, "C1_monotrack_detect": 15.48069347400451, "C1_mt_ok": true}
+d1026_0279 {"C2_birdscourt_detect": 16.466687146981712, "C2_n_pts": 22, "C1_monotrack_detect": 16.088362303969916, "C1_mt_ok": true}
+d1026_0280 {"C2_birdscourt_detect": 29.03729938500328, "C2_n_pts": 22, "C1_monotrack_detect": 22.1090447580209, "C1_mt_ok": true}
+[21:53:24] phase C
+d1026_0281 {"n_frames": 175, "video_s": 7.0, "C2_birdscourt_fit": 0.3167, "C1_v1_ransac_fit": 85.2461, "O_build_obs": 2.1247, "N_load_feats": 0.0698, "N_forward": 2.6429, "SP_shot_prep": 26.5944, "V1_shuttle_fit": 8.795, "MT_shuttle_fit": 15.5998, "C2_valid": true, "C1_hfov": 43.19564349385633, "C1_rms_px": 0.9508221508409995, "C1_inliers": 22, "O_msg": "d1026_0281 T=175 players=4 shuttle=0.44 racket=0.94", "n_shots": 6, "V1_cov": 0.30857142857142855, "MT_cov": 0.42857142857142855}
+wrote /scratch/ciro/timing/out/phase_c.json
+d1026_0261 {"n_frames": 450, "video_s": 18.0, "C2_birdscourt_fit": 0.2537, "C1_v1_ransac_fit": 234.7702, "O_build_obs": 11.0443, "N_load_feats": 0.0733, "N_forward": 2.8324, "SP_shot_prep": 181.3617, "V1_shuttle_fit": 73.9982, "MT_shuttle_fit": 29.4814, "C2_valid": true, "C1_hfov": 44.762329391508175, "C1_rms_px": 0.6777455351644867, "C1_inliers": 22, "O_msg": "d1026_0261 T=450 players=4 shuttle=0.19 racket=0.92", "n_shots": 2, "V1_cov": 0.035555555555555556, "MT_cov": 0.7111111111111111}
+wrote /scratch/ciro/timing/out/phase_c.json
+d1026_0262 {"n_frames": 420, "video_s": 16.8, "C2_birdscourt_fit": 0.2633, "C1_v1_ransac_fit": 161.3421, "O_build_obs": 10.1442, "N_load_feats": 0.0734, "N_forward": 1.3626, "SP_shot_prep": 103.7729, "V1_shuttle_fit": 32.5616, "MT_shuttle_fit": 59.5913, "C2_valid": true, "C1_hfov": 43.86708333053489, "C1_rms_px": 0.311943984259849, "C1_inliers": 22, "O_msg": "d1026_0262 T=420 players=4 shuttle=0.75 racket=0.75", "n_shots": 18, "V1_cov": 0.25, "MT_cov": 0.7642857142857142}
+wrote /scratch/ciro/timing/out/phase_c.json
+d1026_0263 {"n_frames": 230, "video_s": 9.2, "C2_birdscourt_fit": 0.2513, "C1_v1_ransac_fit": 182.1494, "O_build_obs": 3.8257, "N_load_feats": 0.0516, "N_forward": 0.7342, "SP_shot_prep": 99.5643, "V1_shuttle_fit": 15.6036, "MT_shuttle_fit": 36.5494, "C2_valid": true, "C1_hfov": 43.19564349385633, "C1_rms_px": 0.43472775143863307, "C1_inliers": 22, "O_msg": "d1026_0263 T=230 players=4 shuttle=0.64 racket=0.70", "n_shots": 11, "V1_cov": 0.41739130434782606, "MT_cov": 0.7739130434782608}
+wrote /scratch/ciro/timing/out/phase_c.json
+d1026_0264 {"n_frames": 150, "video_s": 6.0, "C2_birdscourt_fit": 0.3191, "C1_v1_ransac_fit": 166.2161, "O_build_obs": 2.2332, "N_load_feats": 0.0361, "N_forward": 0.5209, "SP_shot_prep": 3.9709, "V1_shuttle_fit": 2.8351, "MT_shuttle_fit": 10.5838, "C2_valid": true, "C1_hfov": 43.41946072470577, "C1_rms_px": 0.9827741068246694, "C1_inliers": 22, "O_msg": "d1026_0264 T=150 players=4 shuttle=0.55 racket=0.89", "n_shots": 3, "V1_cov": 0.09333333333333334, "MT_cov": 0.32666666666666666}
+wrote /scratch/ciro/timing/out/phase_c.json
+d1026_0265 {"n_frames": 175, "video_s": 7.0, "C2_birdscourt_fit": 0.2638, "C1_v1_ransac_fit": 131.2907, "O_build_obs": 2.8037, "N_load_feats": 0.0385, "N_forward": 1.0886, "SP_shot_prep": 3.4774, "V1_shuttle_fit": 3.8622, "MT_shuttle_fit": 4.671, "C2_valid": true, "C1_hfov": 42.97183215903704, "C1_rms_px": 0.8064951476141516, "C1_inliers": 22, "O_msg": "d1026_0265 T=175 players=4 shuttle=0.61 racket=0.80", "n_shots": 1, "V1_cov": 0.0, "MT_cov": 0.11428571428571428}
+wrote /scratch/ciro/timing/out/phase_c.json
+d1026_0266 {"n_frames": 225, "video_s": 9.0, "C2_birdscourt_fit": 0.2604, "C1_v1_ransac_fit": 113.7417, "O_build_obs": 4.1241, "N_load_feats": 0.0481, "N_forward": 0.7115, "SP_shot_prep": 8.6165, "V1_shuttle_fit": 4.4015, "MT_shuttle_fit": 19.2539, "C2_valid": true, "C1_hfov": 43.19564349385633, "C1_rms_px": 0.28508835155735684, "C1_inliers": 22, "O_msg": "d1026_0266 T=225 players=4 shuttle=0.58 racket=0.89", "n_shots": 4, "V1_cov": 0.06666666666666667, "MT_cov": 0.3244444444444444}
+wrote /scratch/ciro/timing/out/phase_c.json
+d1026_0267 {"n_frames": 100, "video_s": 4.0, "C2_birdscourt_fit": 0.2679, "C1_v1_ransac_fit": 213.2884, "O_build_obs": 1.4209, "N_load_feats": 0.0279, "N_forward": 0.662, "SP_shot_prep": 2.2465, "V1_shuttle_fit": 2.0883, "MT_shuttle_fit": 7.1519, "C2_valid": true, "C1_hfov": 42.74802116289063, "C1_rms_px": 0.2808067962242536, "C1_inliers": 22, "O_msg": "d1026_0267 T=100 players=4 shuttle=0.57 racket=0.90", "n_shots": 2, "V1_cov": 0.0, "MT_cov": 0.35}
+wrote /scratch/ciro/timing/out/phase_c.json
+d1026_0268 {"n_frames": 105, "video_s": 4.2, "C2_birdscourt_fit": 0.2671, "C1_v1_ransac_fit": 240.8239, "O_build_obs": 1.5027, "N_load_feats": 0.0283, "N_forward": 0.778, "SP_shot_prep": 1.7742, "V1_shuttle_fit": 6.7044, "MT_shuttle_fit": 9.8493, "C2_valid": true, "C1_hfov": 43.86708333053489, "C1_rms_px": 0.44462254193693423, "C1_inliers": 22, "O_msg": "d1026_0268 T=105 players=4 shuttle=0.85 racket=0.83", "n_shots": 3, "V1_cov": 0.11428571428571428, "MT_cov": 0.4}
+wrote /scratch/ciro/timing/out/phase_c.json
+d1026_0269 {"n_frames": 305, "video_s": 12.2, "C2_birdscourt_fit": 0.2545, "C1_v1_ransac_fit": 125.0144, "O_build_obs": 6.6417, "N_load_feats": 0.0564, "N_forward": 0.9083, "SP_shot_prep": 36.0864, "V1_shuttle_fit": 16.1473, "MT_shuttle_fit": 42.794, "C2_valid": true, "C1_hfov": 42.97183215903704, "C1_rms_px": 0.1667696081664077, "C1_inliers": 22, "O_msg": "d1026_0269 T=305 players=4 shuttle=0.79 racket=0.91", "n_shots": 11, "V1_cov": 0.16065573770491803, "MT_cov": 0.7573770491803279}
+wrote /scratch/ciro/timing/out/phase_c.json
+d1026_0270 {"n_frames": 290, "video_s": 11.6, "C2_birdscourt_fit": 0.2491, "C1_v1_ransac_fit": 125.411, "O_build_obs": 5.9421, "N_load_feats": 0.0559, "N_forward": 0.8448, "SP_shot_prep": 46.5172, "V1_shuttle_fit": 25.4233, "MT_shuttle_fit": 55.6008, "C2_valid": true, "C1_hfov": 44.31470659526911, "C1_rms_px": 0.15401434479711917, "C1_inliers": 22, "O_msg": "d1026_0270 T=290 players=4 shuttle=0.83 racket=0.71", "n_shots": 14, "V1_cov": 0.3, "MT_cov": 0.8655172413793103}
+wrote /scratch/ciro/timing/out/phase_c.json
+d1026_0271 {"n_frames": 825, "video_s": 33.0, "C2_birdscourt_fit": 0.2666, "C1_v1_ransac_fit": 190.2078, "O_build_obs": 32.9387, "N_load_feats": 0.1321, "N_forward": 2.505, "SP_shot_prep": 348.5881, "V1_shuttle_fit": 58.2441, "MT_shuttle_fit": 155.499, "C2_valid": true, "C1_hfov": 45.20995346730378, "C1_rms_px": 0.9394844878029476, "C1_inliers": 22, "O_msg": "d1026_0271 T=825 players=4 shuttle=0.82 racket=0.85", "n_shots": 36, "V1_cov": 0.4206060606060606, "MT_cov": 0.9151515151515152}
+wrote /scratch/ciro/timing/out/phase_c.json
+d1026_0272 {"n_frames": 100, "video_s": 4.0, "C2_birdscourt_fit": 0.2624, "C1_v1_ransac_fit": 296.7802, "O_build_obs": 1.2538, "N_load_feats": 0.0301, "N_forward": 0.8646, "SP_shot_prep": 77.941, "V1_shuttle_fit": 40.3485, "MT_shuttle_fit": 10.472, "C2_valid": true, "C1_hfov": 42.74802116289063, "C1_rms_px": 0.42521836475090147, "C1_inliers": 22, "O_msg": "d1026_0272 T=100 players=4 shuttle=0.25 racket=0.89", "n_shots": 2, "V1_cov": 0.0, "MT_cov": 0.96}
+wrote /scratch/ciro/timing/out/phase_c.json
+d1026_0273 {"n_frames": 250, "video_s": 10.0, "C2_birdscourt_fit": 0.2628, "C1_v1_ransac_fit": 184.6761, "O_build_obs": 4.4095, "N_load_feats": 0.0529, "N_forward": 1.0573, "SP_shot_prep": 40.8249, "V1_shuttle_fit": 19.0066, "MT_shuttle_fit": 32.2003, "C2_valid": true, "C1_hfov": 43.86708333053489, "C1_rms_px": 0.11082598602884494, "C1_inliers": 22, "O_msg": "d1026_0273 T=250 players=4 shuttle=0.70 racket=0.80", "n_shots": 10, "V1_cov": 0.3, "MT_cov": 0.796}
+wrote /scratch/ciro/timing/out/phase_c.json
+d1026_0274 {"n_frames": 135, "video_s": 5.4, "C2_birdscourt_fit": 0.2569, "C1_v1_ransac_fit": 462.053, "O_build_obs": 1.9799, "N_load_feats": 0.0336, "N_forward": 0.5726, "SP_shot_prep": 3.8234, "V1_shuttle_fit": 7.4954, "MT_shuttle_fit": 17.9279, "C2_valid": true, "C1_hfov": 44.20253023215742, "C1_rms_px": 0.9225825711138149, "C1_inliers": 22, "O_msg": "d1026_0274 T=135 players=4 shuttle=0.69 racket=0.85", "n_shots": 3, "V1_cov": 0.28888888888888886, "MT_cov": 0.362962962962963}
+wrote /scratch/ciro/timing/out/phase_c.json
+d1026_0275 {"n_frames": 140, "video_s": 5.6, "C2_birdscourt_fit": 0.2584, "C1_v1_ransac_fit": 248.0832, "O_build_obs": 1.9495, "N_load_feats": 0.0349, "N_forward": 0.6912, "SP_shot_prep": 473.8159, "V1_shuttle_fit": 12.3985, "MT_shuttle_fit": 25.4109, "C2_valid": true, "C1_hfov": 44.762329391508175, "C1_rms_px": 0.43940664109582667, "C1_inliers": 22, "O_msg": "d1026_0275 T=140 players=4 shuttle=0.69 racket=0.75", "n_shots": 7, "V1_cov": 0.6857142857142857, "MT_cov": 0.7785714285714286}
+wrote /scratch/ciro/timing/out/phase_c.json
+d1026_0276 {"n_frames": 105, "video_s": 4.2, "C2_birdscourt_fit": 0.2216, "C1_v1_ransac_fit": 274.4569, "O_build_obs": 1.467, "N_load_feats": 0.0298, "N_forward": 0.6765, "SP_shot_prep": 2.2006, "V1_shuttle_fit": 1.3848, "MT_shuttle_fit": 3.929, "C2_valid": true, "C1_hfov": 43.41946072470577, "C1_rms_px": 0.8310481295186506, "C1_inliers": 22, "O_msg": "d1026_0276 T=105 players=4 shuttle=0.55 racket=0.68", "n_shots": 1, "V1_cov": 0.0, "MT_cov": 0.1619047619047619}
+wrote /scratch/ciro/timing/out/phase_c.json
+d1026_0277 {"n_frames": 165, "video_s": 6.6, "C2_birdscourt_fit": 0.2533, "C1_v1_ransac_fit": 192.6188, "O_build_obs": 2.4776, "N_load_feats": 0.039, "N_forward": 1.4293, "SP_shot_prep": 16.418, "V1_shuttle_fit": 6.4897, "MT_shuttle_fit": 14.525, "C2_valid": true, "C1_hfov": 43.41946072470577, "C1_rms_px": 0.197960005099597, "C1_inliers": 22, "O_msg": "d1026_0277 T=165 players=4 shuttle=0.62 racket=0.87", "n_shots": 3, "V1_cov": 0.3939393939393939, "MT_cov": 0.3878787878787879}
+wrote /scratch/ciro/timing/out/phase_c.json
+d1026_0278 {"n_frames": 540, "video_s": 21.6, "C2_birdscourt_fit": 0.2679, "C1_v1_ransac_fit": 171.1711, "O_build_obs": 15.824, "N_load_feats": 0.0944, "N_forward": 1.3971, "SP_shot_prep": 211.8079, "V1_shuttle_fit": 37.253, "MT_shuttle_fit": 109.4355, "C2_valid": true, "C1_hfov": 44.762329391508175, "C1_rms_px": 0.06688872566235726, "C1_inliers": 22, "O_msg": "d1026_0278 T=540 players=4 shuttle=0.80 racket=0.88", "n_shots": 25, "V1_cov": 0.43148148148148147, "MT_cov": 0.8925925925925926}
+wrote /scratch/ciro/timing/out/phase_c.json
+d1026_0279 {"n_frames": 180, "video_s": 7.2, "C2_birdscourt_fit": 0.1935, "C1_v1_ransac_fit": 224.3564, "O_build_obs": 2.8595, "N_load_feats": 0.0411, "N_forward": 0.8282, "SP_shot_prep": 18.1004, "V1_shuttle_fit": 14.5171, "MT_shuttle_fit": 32.3876, "C2_valid": true, "C1_hfov": 43.64327169726964, "C1_rms_px": 0.4269650986499288, "C1_inliers": 22, "O_msg": "d1026_0279 T=180 players=4 shuttle=0.78 racket=0.89", "n_shots": 7, "V1_cov": 0.03888888888888889, "MT_cov": 0.7833333333333333}
+wrote /scratch/ciro/timing/out/phase_c.json
+d1026_0280 {"n_frames": 615, "video_s": 24.6, "C2_birdscourt_fit": 0.2668, "C1_v1_ransac_fit": 301.8212, "O_build_obs": 16.8869, "N_load_feats": 0.1024, "N_forward": 1.7639, "SP_shot_prep": 217.3993, "V1_shuttle_fit": 48.663, "MT_shuttle_fit": 133.3513, "C2_valid": true, "C1_hfov": 43.41946072470577, "C1_rms_px": 0.7434987462457895, "C1_inliers": 22, "O_msg": "d1026_0280 T=615 players=4 shuttle=0.66 racket=0.82", "n_shots": 25, "V1_cov": 0.31869918699186994, "MT_cov": 0.8666666666666667}
+wrote /scratch/ciro/timing/out/phase_c.json
+[00:01:49] phase D
+  ckpt = torch.load(checkpoint, map_location='cpu')
+d1026_0281 175f top0 0.99 top1 0.29 bottom0 0.99 bottom1 0.99 44s
+d1026_0261 450f top0 1.00 top1 0.90 bottom0 1.00 bottom1 1.00 138s
+d1026_0262 420f top0 0.97 top1 1.00 bottom0 0.94 bottom1 1.00 126s
+d1026_0263 230f top0 1.00 top1 0.87 bottom0 1.00 bottom1 1.00 66s
+d1026_0264 150f top0 0.99 top1 0.91 bottom0 1.00 bottom1 0.99 43s
+d1026_0265 175f top0 0.99 top1 0.99 bottom0 0.99 bottom1 1.00 51s
+d1026_0266 225f top0 1.00 top1 0.86 bottom0 1.00 bottom1 1.00 65s
+d1026_0267 100f top0 1.00 top1 1.00 bottom0 1.00 bottom1 1.00 29s
+d1026_0268 105f top0 0.99 top1 0.99 bottom0 0.00 bottom1 0.99 23s
+d1026_0269 305f top0 1.00 top1 1.00 bottom0 1.00 bottom1 1.00 93s
+d1026_0270 290f top0 0.99 top1 0.99 bottom0 0.00 bottom1 0.99 67s
+d1026_0271 825f top0 1.00 top1 0.89 bottom0 0.45 bottom1 0.90 230s
+d1026_0272 100f top0 0.76 top1 0.99 bottom0 0.00 bottom1 0.99 21s
+d1026_0273 250f top0 0.99 top1 0.90 bottom0 0.77 bottom1 0.54 61s
+d1026_0274 135f top0 1.00 top1 1.00 bottom0 1.00 bottom1 1.00 39s
+d1026_0275 140f top0 0.99 top1 0.71 bottom0 0.00 bottom1 0.99 28s
+d1026_0276 105f top0 1.00 top1 1.00 bottom0 1.00 bottom1 0.94 30s
+d1026_0277 165f top0 0.97 top1 0.97 bottom0 0.99 bottom1 0.99 47s
+d1026_0278 540f top0 0.97 top1 0.97 bottom0 0.79 bottom1 0.25 133s
+d1026_0279 180f top0 0.99 top1 0.99 bottom0 0.00 bottom1 0.89 39s
+d1026_0280 615f top0 0.81 top1 0.98 bottom0 1.00 bottom1 1.00 183s
+  m.load_state_dict(torch.load(os.path.join(_V1, "hit_model_final_transformer.pt"), map_location="cpu"))
+wrote /scratch/ciro/timing/out/phase_d.json
+[00:28:36] done

@@ -1,0 +1,7 @@
+redo 93
+errors 1 [{'error': "ValueError('array must not contain infs or NaNs')"}]
+mt       shuttle  387 rallies, median 2.460 m, coverage 0.76
+v1       shuttle  353 rallies, median 1.963 m, coverage 0.52
+v2fit    shuttle  388 rallies, median 1.630 m, coverage 0.99
+tram     player   392 rallies, median 0.641 m, coverage 0.85
+v1p      player   392 rallies, median 0.139 m, coverage 0.86

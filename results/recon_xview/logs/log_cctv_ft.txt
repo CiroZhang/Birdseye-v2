@@ -1,0 +1,2 @@
+errors 1 [{'error': "ValueError('array must not contain infs or NaNs')"}]
+ft       shuttle  387 rallies, median 2.316 m, coverage 0.77

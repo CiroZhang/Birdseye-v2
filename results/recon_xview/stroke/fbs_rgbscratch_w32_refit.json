@@ -1,0 +1,57 @@
+{
+ "tag": "fbs_rgbscratch_w32_refit",
+ "input": "rgb",
+ "cfg": {
+  "epochs": 60,
+  "bs": 32,
+  "lr": 0.0005,
+  "wd": 0.05,
+  "ls": 0.1,
+  "jitter": 2,
+  "heads": 4,
+  "W": 32,
+  "d": 192,
+  "L": 4,
+  "drop": 0.1
+ },
+ "refit": true,
+ "frames": "C:/Users/sshuser/desktop/Birdseye-v2/data/fbs/frames128",
+ "runs": [
+  {
+   "seed": 0,
+   "epoch": 49,
+   "test_acc": 0.6945304437564499,
+   "test_macro_f1": 0.6323493248403274,
+   "sel": {
+    "epoch": 49,
+    "loss": 0.5391762115648673,
+    "sel_acc": 0.6208271051320379,
+    "sel_f1": 0.5542392657621033
+   }
+  },
+  {
+   "seed": 1,
+   "epoch": 40,
+   "test_acc": 0.6928104575163399,
+   "test_macro_f1": 0.6382052225234746,
+   "sel": {
+    "epoch": 40,
+    "loss": 0.6210290942943937,
+    "sel_acc": 0.6552067762830095,
+    "sel_f1": 0.5865408887335559
+   }
+  },
+  {
+   "seed": 2,
+   "epoch": 15,
+   "test_acc": 0.6924664602683178,
+   "test_macro_f1": 0.6179470820675804,
+   "sel": {
+    "epoch": 15,
+    "loss": 1.0446144372101147,
+    "sel_acc": 0.6367713004484304,
+    "sel_f1": 0.572180140215318
+   }
+  }
+ ]
+}
