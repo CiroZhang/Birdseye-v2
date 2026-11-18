@@ -131,8 +131,8 @@
         <div class="stats" id="stats"></div>
         <p class="note">Median distance from the 3D result to the fixed side camera's sight-lines, a camera the network
           never sees. Lower is better.</p>
-        <p class="note">Shown for display: a light 3-frame smoothing, and at each detected hit the hitter's arm eased so
-          the racket meets the shuttle. The numbers above are from the network's raw output.</p>
+        <p class="note">Shown for display: a light 3-frame smoothing, at each detected hit the hitter's arm eased so
+          the racket meets the shuttle, and a player who drops out of the detections held, faded, where last seen. The numbers above are from the network's raw output.</p>
         <div class="legend">
           <span><i style="background:#ff6b4a"></i><i style="background:#f4a261;margin-left:-4px"></i>near-side team</span>
           <span><i style="background:#3cc8f0"></i><i style="background:#8c9bff;margin-left:-4px"></i>far-side team</span>
@@ -275,7 +275,10 @@
     g.add(rk);
     g.traverse((o) => o.layers.enable(DYN));
     scene.add(g);
-    return { g, bones, joints, head, hair, rk, handle, shaft, ring, strings };
+    const fadeMats = [];  // the body's materials, faded while the player is held in place
+    g.traverse((o) => { if (o.material && !fadeMats.includes(o.material)) fadeMats.push(o.material); });
+    fadeMats.forEach((m) => { m.userData.op = m.opacity; });
+    return { g, bones, joints, head, hair, rk, handle, shaft, ring, strings, fadeMats, held: null };
   }
 
   const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3(), tmpD = new THREE.Vector3(), tmpQ = new THREE.Quaternion();
@@ -363,7 +366,7 @@
     return lerp3(a, b, w);
   }
   function playerFrame(p, t) {
-    const k = Math.floor(t), w = t - k, a = p.j[k], b = p.j[Math.min(k + 1, D.T - 1)];
+    const k = Math.floor(t), w = t - k, a = p.j[p.src[k]], b = p.j[p.src[Math.min(k + 1, D.T - 1)]];
     if (!a) return null;
     if (!b) return a;
     const o = new Array(a.length);
@@ -371,7 +374,7 @@
     return o;
   }
   function racketFrame(p, t) {
-    const k = Math.floor(t), w = t - k, a = p.rk[k], b = p.rk[Math.min(k + 1, D.T - 1)];
+    const k = Math.floor(t), w = t - k, a = p.rk[p.src[k]], b = p.rk[p.src[Math.min(k + 1, D.T - 1)]];
     if (!a) return null; if (!b) return a;
     return a.map((v, i) => v + (b[i] - v) * w);
   }
@@ -380,6 +383,11 @@
   function drawPlayer(pl, data, t) {
     const f = playerFrame(data, t);
     pl.g.visible = !!f;
+    const held = !data.j[Math.floor(t)];  // not detected now: shown standing where last (or first) seen
+    if (held !== pl.held) {
+      pl.held = held;
+      pl.fadeMats.forEach((m) => { m.transparent = held || m.userData.op < 1; m.opacity = held ? 0.35 * m.userData.op : m.userData.op; m.needsUpdate = true; });
+    }
     if (!f) return;
     for (let j = 0; j < 24; j++) J[j].copy(V(f[3*j], f[3*j+1], f[3*j+2]));
     for (const m of pl.bones) placeBone(m, J[m.userData.a], J[m.userData.b], m.userData.r);
@@ -400,7 +408,7 @@
       pl.handle.position.copy(g).addScaledVector(u, 0.08); pl.handle.quaternion.copy(q);
       pl.shaft.position.copy(g).addScaledVector(u, 0.27); pl.shaft.quaternion.copy(q);
       // face: the exported normal turns smoothly with the swing; kept across the shaft
-      const fk = Math.floor(t), fw = t - fk, fa = data.fn && data.fn[fk], fb = data.fn && data.fn[Math.min(fk + 1, D.T - 1)];
+      const fk = Math.floor(t), fw = t - fk, fa = data.fn && data.fn[data.src[fk]], fb = data.fn && data.fn[data.src[Math.min(fk + 1, D.T - 1)]];
       const nf = fa ? (fb ? lerp3(fa, fb, fw) : fa) : null;
       if (nf) pl.lastN = new THREE.Vector3(nf[0], nf[2], -nf[1]);  // no normal this frame: keep the last one
       let n = pl.lastN ? pl.lastN.clone() : new THREE.Vector3().crossVectors(u, UP);
@@ -564,6 +572,12 @@
   async function load(uid) {
     pause(); $("loading").style.display = "grid";
     D = await (await fetch(`d/${uid}.json`)).json();
+    for (const p of D.players) {  // per frame, the frame whose pose is shown: itself, else the last seen, else the first
+      p.src = new Array(D.T); let last = -1;
+      for (let t = 0; t < D.T; t++) { if (p.j[t]) last = t; p.src[t] = last; }
+      let next = -1;
+      for (let t = D.T - 1; t >= 0; t--) { if (p.j[t]) next = t; if (p.src[t] < 0) p.src[t] = next; }
+    }
     buildPlayers();
     bc = setBroadcast(oCam, D.cam); setBroadcast(bcCam, D.cam);
     video.src = `v/${uid}.mp4`; video.load();
