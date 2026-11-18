@@ -23,6 +23,12 @@
   header h1 span { color: var(--gold); }
   header p { margin: 0; color: var(--ink-2); max-width: 70ch; }
   header a { color: var(--ink-2); }
+  .modes { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .modes button { background: transparent; border: 1px solid var(--line); color: var(--ink-2); border-radius: 999px; padding: 6px 14px;
+                  font: 600 13px Inter, sans-serif; cursor: pointer; }
+  .modes button small { font-weight: 400; color: var(--ink-3); margin-left: 6px; }
+  .modes button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .modes button.on small { color: #3a4654; }
   .rallies { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 12px; scrollbar-width: thin; }
   .rally { flex: 0 0 auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px;
            color: var(--ink-2); cursor: pointer; text-align: left; font: inherit; min-width: 150px; }
@@ -86,10 +92,14 @@
 <div class="wrap">
   <header>
     <h1>Birdseye <span>·</span> rally viewer</h1>
-    <p>Every player's body, racket and the shuttle in 3D, from the broadcast video alone. Rallies from four matches the
-      network never trained on. <a href="../">Project page</a> · <a href="../teacher/">teacher vs student</a></p>
+    <p>Every player's body, racket and the shuttle in 3D. The student sees only the broadcast video; the teacher it
+      learned from fits physics to four venue cameras, offline. <a href="../">Project page</a></p>
   </header>
 
+  <div class="modes" id="modes">
+    <button data-mode="student" class="on">Student: broadcast camera only<small>held-out matches</small></button>
+    <button data-mode="teacher">Teacher: four venue cameras<small>training matches, offline</small></button>
+  </div>
   <div class="rallies" id="rallies"></div>
 
   <div class="main">
@@ -118,24 +128,25 @@
 
     <div class="side">
       <div class="card">
-        <h2>Broadcast video · the only input</h2>
+        <h2 id="vidTitle">Broadcast video · the only input</h2>
         <div class="vid"><video id="video" muted playsinline preload="auto"></video></div>
-        <h2 style="margin-top:12px">The 3D result, drawn over it</h2>
-        <div class="vid"><video id="video2" muted playsinline preload="auto"></video><canvas id="overlay"></canvas></div>
-        <p class="note">The 3D scene re-drawn from the calibrated broadcast camera: it lines up with the picture wherever
+        <div id="ovBlock"><h2 style="margin-top:12px">The 3D result, drawn over it</h2>
+        <div class="vid"><video id="video2" muted playsinline preload="auto"></video><canvas id="overlay"></canvas></div></div>
+        <p class="note" id="vidNote">The 3D scene re-drawn from the calibrated broadcast camera: it lines up with the picture wherever
           the result is right in the image; the views on the left show the depth the broadcast camera cannot see.</p>
       </div>
       <div class="card">
-        <h2>This rally, checked from the side camera</h2>
+        <h2 id="statTitle">This rally, checked from the side camera</h2>
         <div class="stats" id="stats"></div>
-        <p class="note">Median distance from the 3D result to the fixed side camera's sight-lines, a camera the network
+        <p class="note" id="statNote">Median distance from the 3D result to the fixed side camera's sight-lines, a camera the network
           never sees. Lower is better.</p>
-        <p class="note">Shown for display: a light 3-frame smoothing, at each detected hit the hitter's arm eased so
+        <p class="note" id="dispNote">Shown for display: a light 3-frame smoothing, at each detected hit the hitter's arm eased so
           the racket meets the shuttle, and a player who drops out of the detections held, faded, where last seen. The numbers above are from the network's raw output.</p>
         <div class="legend">
           <span><i style="background:#ff6b4a"></i><i style="background:#f4a261;margin-left:-4px"></i>near-side team</span>
           <span><i style="background:#3cc8f0"></i><i style="background:#8c9bff;margin-left:-4px"></i>far-side team</span>
           <span><i style="background:var(--gold)"></i>shuttle · hits</span>
+          <span id="legUnsure" hidden><i style="background:#8a96a3"></i>shuttle the teacher leaves unlabelled</span>
         </div>
       </div>
     </div>
@@ -428,6 +439,9 @@
     P.forEach((pl, i) => drawPlayer(pl, D.players[i], frame));
     const s = shAt(frame);
     shuttle.visible = !!s;
+    const isLab = (t) => !D.label || D.label[Math.max(0, Math.min(D.T - 1, Math.round(t)))] === 1;  // teacher: certified label?
+    glow.material.color.set(isLab(frame) ? 0xffffff : 0x8a96a3);
+    skirt.material.color.set(isLab(frame) ? 0xfffbea : 0x9aa5b0);
     if (s) {
       const p = V(s[0], s[1], s[2]);
       shuttle.position.copy(p);
@@ -443,7 +457,7 @@
     trail.forEach((m, i) => {
       const tt = frame - (i + 1) * 0.6; const q = tt >= 0 && opts.trail ? shAt(tt) : null;
       m.visible = !!q && !!s;
-      if (q) { m.position.copy(V(q[0], q[1], q[2])); const a = 1 - i / N_TRAIL; m.scale.setScalar(0.022 * a + 0.004); m.material.opacity = 0.55 * a * a; }
+      if (q) { m.material.color.set(isLab(tt) ? 0xffd166 : 0x8a96a3); m.position.copy(V(q[0], q[1], q[2])); const a = 1 - i / N_TRAIL; m.scale.setScalar(0.022 * a + 0.004); m.material.opacity = 0.55 * a * a; }
     });
     // hit flashes when crossing a hit going forward
     const k = Math.floor(frame);
@@ -470,7 +484,8 @@
   // ---------- cameras ----------
   let follow = false, orbit = false, camAnim = null;
   const PRESETS = {
-    "broadcast": () => bc && { pos: bc.pos, target: bc.pos.clone().add(new THREE.Vector3(0, 0, -1).applyQuaternion(bc.quat).multiplyScalar(18)), fov: bc.fov },
+    "broadcast": () => bc ? { pos: bc.pos, target: bc.pos.clone().add(new THREE.Vector3(0, 0, -1).applyQuaternion(bc.quat).multiplyScalar(18)), fov: bc.fov }
+                          : D && D.cams && { pos: V(...D.cams.tv), target: new THREE.Vector3(0, 0.6, 0), fov: 26 },
     "side": () => ({ pos: new THREE.Vector3(13.5, 3.2, 0), target: new THREE.Vector3(0, 1.0, 0), fov: 42 }),
     "behind": () => ({ pos: new THREE.Vector3(0, 5.5, -16), target: new THREE.Vector3(0, 0.8, 1), fov: 40 }),
     "top": () => ({ pos: new THREE.Vector3(0, 21, 0.01), target: new THREE.Vector3(0, 0, 0), fov: 42 }),
@@ -582,13 +597,26 @@
       for (let t = D.T - 1; t >= 0; t--) { if (p.j[t]) next = t; if (p.src[t] < 0) p.src[t] = next; }
     }
     buildPlayers();
-    bc = setBroadcast(oCam, D.cam); setBroadcast(bcCam, D.cam);
-    for (const v of [video, video2]) { v.src = `v/${uid}.mp4`; v.load(); }
+    const T_ = D.mode === "teacher";
+    bc = T_ ? null : setBroadcast(oCam, D.cam); if (!T_) setBroadcast(bcCam, D.cam);
+    video.src = T_ ? D.video : `v/${uid}.mp4`; video.load();
+    if (T_) { video2.removeAttribute("src"); video2.load(); } else { video2.src = `v/${uid}.mp4`; video2.load(); }
+    $("ovBlock").hidden = T_; $("legUnsure").hidden = !T_; $("dispNote").hidden = T_;
+    $("vidTitle").textContent = T_ ? "The teacher's input · four synchronised cameras" : "Broadcast video · the only input";
+    $("vidNote").textContent = T_ ? "Broadcast (top left), fixed side camera (top right) and the two player cameras. The teacher fits physics to all four offline; the student never sees any of them but the broadcast."
+                                  : "The 3D scene re-drawn from the calibrated broadcast camera: it lines up with the picture wherever the result is right in the image; the views on the left show the depth the broadcast camera cannot see.";
+    $("statTitle").textContent = T_ ? "This rally, as training labels" : "This rally, checked from the side camera";
+    $("statNote").textContent = T_ ? "The teacher only labels what it can certify: gold shuttle frames become training labels, grey ones are left out."
+                                   : "Median distance from the 3D result to the fixed side camera's sight-lines, a camera the network never sees. Lower is better.";
     $("ticks").innerHTML = D.hits.map((h) => {
       const side = h.p >= 0 ? D.players[h.p].side : ""; return `<div class="hit ${side}" style="left:${(100 * h.f / (D.T - 1)).toFixed(3)}%"></div>`;
     }).join("");
     const s = D.stats;
-    $("stats").innerHTML = [
+    $("stats").innerHTML = T_ ? [
+      ["certified", `${s.labelled_frac}<small>%</small>`, "of flight frames"],
+      ["hits", D.hits.length, "found by the teacher"],
+      ["length", (D.T / D.fps).toFixed(1), `s · ${D.singles ? "singles" : "doubles"}`],
+    ].map(([k, v, sub]) => `<div class="stat"><div class="v">${v}</div><div class="k">${k} · ${sub}</div></div>`).join("") : [
       ["shuttle", s.shuttle_cm, `${s.n_shuttle} side-view points`],
       ["players", s.player_cm, `${s.n_player} player-frames`],
       ["hits found", D.hits.length, `${(D.T / D.fps).toFixed(1)} s · ${D.singles ? "singles" : "doubles"}`],
@@ -604,10 +632,20 @@
   (async () => {
     resize(); requestAnimationFrame(tick);
     const idx = await (await fetch("d/index.json")).json();
-    $("rallies").innerHTML = idx.map((r, i) => `<button class="rally" data-uid="${r.uid}"><b>Rally ${i + 1}</b>
-      <small>${r.sec} s · ${r.players <= 2 ? "singles" : "doubles"} · ${r.hits} hits · shuttle ${r.shuttle_cm} cm</small></button>`).join("");
-    document.querySelectorAll(".rally").forEach((b) => b.onclick = () => load(b.dataset.uid));
-    await load(Q.r ? idx[+Q.r].uid : idx[0].uid);
+    let mode = Q.mode === "teacher" ? "teacher" : "student";
+    const strip = () => {
+      const list = idx.filter((r) => (r.mode || "student") === mode);
+      $("rallies").innerHTML = list.map((r, i) => `<button class="rally" data-uid="${r.uid}"><b>Rally ${i + 1}</b>
+        <small>${r.sec} s · ${r.players <= 2 ? "singles" : "doubles"} · ${r.hits} hits · ${mode === "teacher" ? `${r.labelled}% labelled` : `shuttle ${r.shuttle_cm} cm`}</small></button>`).join("");
+      document.querySelectorAll(".rally").forEach((b) => b.onclick = () => load(b.dataset.uid));
+      document.querySelectorAll("#modes button").forEach((b) => b.classList.toggle("on", b.dataset.mode === mode));
+      return list;
+    };
+    document.querySelectorAll("#modes button").forEach((b) => b.onclick = async () => {
+      if (b.dataset.mode === mode) return; mode = b.dataset.mode; const list = strip(); await load(list[0].uid); setView(view);
+    });
+    const list0 = strip();
+    await load(Q.r ? list0[+Q.r].uid : list0[0].uid);
     setView(Q.view || "orbit");
     if (Q.view && camAnim) camAnim.dur = 1;
   })();
