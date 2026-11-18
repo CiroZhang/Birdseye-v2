@@ -108,6 +108,7 @@
           <button id="tTrail" class="on" title="Shuttle trail">trail</button>
           <button id="tFlight" title="Whole shuttle flight">flight path</button>
           <button id="tDrop" class="on" title="Shuttle height line and floor shadow">height</button>
+          <button id="tSolid" title="Solid bodies instead of bones">solid bodies</button>
           <span class="t" id="tcode">0.00 s · frame 0</span>
         </div>
         <div class="tl" id="tl"><div class="track"></div><div class="fill" id="fill"></div><div id="ticks"></div><div class="knob" id="knob"></div></div>
@@ -242,24 +243,27 @@
   const unitSph = new THREE.SphereGeometry(1, 16, 12);
   const UP = new THREE.Vector3(0, 1, 0);
   function makePlayer(color) {
-    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.05 });
-    const skin = new THREE.MeshStandardMaterial({ color: 0xe8c3a8, roughness: 0.7 });
+    const solid = opts.solid;
+    const mat = solid ? new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.05 })
+                      : new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.45, roughness: 0.4 });
+    const skin = solid ? new THREE.MeshStandardMaterial({ color: 0xe8c3a8, roughness: 0.7 }) : mat;
+    const rad = (k) => solid ? (RAD[k] || 0.05) : (/^(0-3|3-6|6-9)$/.test(k) ? 0.022 : 0.016);
     const g = new THREE.Group();
     const bones = BONES.map(([a, b]) => {
       const m = new THREE.Mesh(unitCyl, (a >= 18 || b >= 18) && !(a === 16 || a === 17) ? skin : mat);
-      m.castShadow = true; m.userData = { a, b, r: RAD[a + "-" + b] || 0.05 }; g.add(m); return m;
+      m.castShadow = true; m.userData = { a, b, r: rad(a + "-" + b) }; g.add(m); return m;
     });
     const joints = [];
     for (let j = 0; j < 24; j++) {
       if (j === 15) continue;
-      const r = Math.max(...BONES.filter(([a, b]) => a === j || b === j).map(([a, b]) => RAD[a + "-" + b] || 0.04));
+      const r = solid ? Math.max(...BONES.filter(([a, b]) => a === j || b === j).map(([a, b]) => RAD[a + "-" + b] || 0.04)) : 0.03;
       const m = new THREE.Mesh(unitSph, j >= 20 ? skin : mat); m.scale.setScalar(r); m.castShadow = true;
       m.userData = { j }; g.add(m); joints.push(m);
     }
-    const head = new THREE.Mesh(unitSph, skin); head.scale.set(0.105, 0.125, 0.11); head.castShadow = true; g.add(head);
+    const head = new THREE.Mesh(unitSph, skin); head.scale.set(...(solid ? [0.105, 0.125, 0.11] : [0.09, 0.1, 0.09])); head.castShadow = true; g.add(head);
     const hair = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.55),
       new THREE.MeshStandardMaterial({ color: 0x1b1612, roughness: 0.9 }));
-    hair.scale.set(0.112, 0.13, 0.117); hair.castShadow = true; g.add(hair);
+    hair.scale.set(0.112, 0.13, 0.117); hair.castShadow = true; hair.visible = solid; g.add(hair);
     // racket: handle + frame (ellipse ring) + strings
     const rk = new THREE.Group();
     const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.2, 10), new THREE.MeshStandardMaterial({ color: 0x222831, roughness: 0.5 }));
@@ -351,7 +355,7 @@
   // ---------- data ----------
   let D = null, P = [], frame = 0, playing = false, bc = null, lastHit = -1;
   const video = $("video");
-  const opts = { trail: true, flight: false, drop: true, overlay: true };
+  const opts = { trail: true, flight: false, drop: true, overlay: true, solid: false };
 
   function lerp3(a, b, w) { return a && b ? [a[0] + (b[0] - a[0]) * w, a[1] + (b[1] - a[1]) * w, a[2] + (b[2] - a[2]) * w] : a || null; }
   function shAt(t) {
@@ -528,6 +532,7 @@
   $("play").onclick = () => playing ? pause() : play();
   $("speed").onchange = () => { video.playbackRate = parseFloat($("speed").value); };
   function toggle(id, key, fn) { $(id).onclick = () => { opts[key] = !opts[key]; $(id).classList.toggle("on", opts[key]); fn && fn(); setFrame(frame); }; }
+  toggle("tSolid", "solid", () => D && buildPlayers());
   toggle("tTrail", "trail"); toggle("tFlight", "flight", buildFlight); toggle("tDrop", "drop"); toggle("tOverlay", "overlay");
   function seekFrom(ev) {
     const r = $("tl").getBoundingClientRect(); const x = Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width));
@@ -547,13 +552,15 @@
   video.addEventListener("ended", pause);
 
   function clearPlayers() { P.forEach((p) => scene.remove(p.g)); P = []; }
+  function buildPlayers() {
+    clearPlayers();
+    let ni = 0, fi = 0;
+    P = D.players.map((p) => p.side === "near" ? makePlayer(ni++ ? 0xf4a261 : 0xff6b4a) : makePlayer(fi++ ? 0x8c9bff : 0x3cc8f0));
+  }
   async function load(uid) {
     pause(); $("loading").style.display = "grid";
     D = await (await fetch(`d/${uid}.json`)).json();
-    clearPlayers();
-    const near = D.players.filter((p) => p.side === "near").length, far = D.players.filter((p) => p.side === "far").length;
-    let ni = 0, fi = 0;
-    P = D.players.map((p) => p.side === "near" ? makePlayer(ni++ ? 0xf4a261 : 0xff6b4a) : makePlayer(fi++ ? 0x8c9bff : 0x3cc8f0));
+    buildPlayers();
     bc = setBroadcast(oCam, D.cam); setBroadcast(bcCam, D.cam);
     video.src = `v/${uid}.mp4`; video.load();
     $("ticks").innerHTML = D.hits.map((h) => {
