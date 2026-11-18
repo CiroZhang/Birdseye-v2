@@ -119,12 +119,11 @@
     <div class="side">
       <div class="card">
         <h2>Broadcast video · the only input</h2>
-        <div class="vid"><video id="video" muted playsinline preload="auto"></video><canvas id="overlay"></canvas></div>
-        <div class="ctl" style="margin-top:8px">
-          <button id="tOverlay" class="on" title="Draw the 3D result from the broadcast camera">3D over the video</button>
-        </div>
-        <p class="note">The overlay is the 3D scene re-drawn from the calibrated broadcast camera, so it lines up with the
-          picture wherever the depth is right in the image; the other views show the depth itself.</p>
+        <div class="vid"><video id="video" muted playsinline preload="auto"></video></div>
+        <h2 style="margin-top:12px">The 3D result, drawn over it</h2>
+        <div class="vid"><video id="video2" muted playsinline preload="auto"></video><canvas id="overlay"></canvas></div>
+        <p class="note">The 3D scene re-drawn from the calibrated broadcast camera: it lines up with the picture wherever
+          the result is right in the image; the views on the left show the depth the broadcast camera cannot see.</p>
       </div>
       <div class="card">
         <h2>This rally, checked from the side camera</h2>
@@ -357,7 +356,8 @@
 
   // ---------- data ----------
   let D = null, P = [], frame = 0, playing = false, bc = null, lastHit = -1;
-  const video = $("video");
+  const video = $("video"), video2 = $("video2");
+  function seekVideos() { const t = frame / D.fps; video.currentTime = t; video2.currentTime = t; }
   const opts = { trail: true, flight: false, drop: true, overlay: true, solid: false };
 
   function lerp3(a, b, w) { return a && b ? [a[0] + (b[0] - a[0]) * w, a[1] + (b[1] - a[1]) * w, a[2] + (b[2] - a[2]) * w] : a || null; }
@@ -505,7 +505,10 @@
     requestAnimationFrame(tick);
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
     if (D && playing) {
-      if (!video.paused && video.readyState >= 2) setFrame(video.currentTime * D.fps);
+      if (!video.paused && video.readyState >= 2) {
+        setFrame(video.currentTime * D.fps);
+        if (Math.abs(video2.currentTime - video.currentTime) > 0.08) video2.currentTime = video.currentTime;  // keep the two in step
+      }
       else { setFrame(frame + dt * D.fps * parseFloat($("speed").value)); if (frame >= D.T - 1.01) pause(); }
     }
     if (camAnim) {
@@ -537,18 +540,18 @@
   function play() {
     if (!D) return; if (frame >= D.T - 1.01) setFrame(0);
     playing = true; $("play").textContent = "❚❚";
-    video.playbackRate = parseFloat($("speed").value);
-    video.currentTime = frame / D.fps; video.play().catch(() => {});
+    for (const v of [video, video2]) v.playbackRate = parseFloat($("speed").value);
+    seekVideos(); video.play().catch(() => {}); video2.play().catch(() => {});
   }
-  function pause() { playing = false; $("play").textContent = "▶"; video.pause(); }
+  function pause() { playing = false; $("play").textContent = "▶"; video.pause(); video2.pause(); }
   $("play").onclick = () => playing ? pause() : play();
-  $("speed").onchange = () => { video.playbackRate = parseFloat($("speed").value); };
+  $("speed").onchange = () => { for (const v of [video, video2]) v.playbackRate = parseFloat($("speed").value); };
   function toggle(id, key, fn) { $(id).onclick = () => { opts[key] = !opts[key]; $(id).classList.toggle("on", opts[key]); fn && fn(); setFrame(frame); }; }
   toggle("tSolid", "solid", () => D && buildPlayers());
-  toggle("tTrail", "trail"); toggle("tFlight", "flight", buildFlight); toggle("tDrop", "drop"); toggle("tOverlay", "overlay");
+  toggle("tTrail", "trail"); toggle("tFlight", "flight", buildFlight); toggle("tDrop", "drop");
   function seekFrom(ev) {
     const r = $("tl").getBoundingClientRect(); const x = Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width));
-    lastHit = 1e9; setFrame(x * (D.T - 1)); lastHit = Math.floor(frame); video.currentTime = frame / D.fps;
+    lastHit = 1e9; setFrame(x * (D.T - 1)); lastHit = Math.floor(frame); seekVideos();
   }
   let dragging = false;
   $("tl").addEventListener("pointerdown", (e) => { if (!D) return; dragging = true; $("tl").setPointerCapture(e.pointerId); seekFrom(e); });
@@ -557,8 +560,8 @@
   window.addEventListener("keydown", (e) => {
     if (e.target.tagName === "SELECT") return;
     if (e.code === "Space") { e.preventDefault(); playing ? pause() : play(); }
-    else if (e.key === "ArrowRight") { pause(); setFrame(Math.floor(frame) + 1); video.currentTime = frame / D.fps; }
-    else if (e.key === "ArrowLeft") { pause(); lastHit = 1e9; setFrame(Math.floor(frame) - 1); lastHit = Math.floor(frame); video.currentTime = frame / D.fps; }
+    else if (e.key === "ArrowRight") { pause(); setFrame(Math.floor(frame) + 1); seekVideos(); }
+    else if (e.key === "ArrowLeft") { pause(); lastHit = 1e9; setFrame(Math.floor(frame) - 1); lastHit = Math.floor(frame); seekVideos(); }
     else if (/^[1-6]$/.test(e.key)) setView(Object.keys(PRESETS)[+e.key - 1]);
   });
   video.addEventListener("ended", pause);
@@ -580,7 +583,7 @@
     }
     buildPlayers();
     bc = setBroadcast(oCam, D.cam); setBroadcast(bcCam, D.cam);
-    video.src = `v/${uid}.mp4`; video.load();
+    for (const v of [video, video2]) { v.src = `v/${uid}.mp4`; v.load(); }
     $("ticks").innerHTML = D.hits.map((h) => {
       const side = h.p >= 0 ? D.players[h.p].side : ""; return `<div class="hit ${side}" style="left:${(100 * h.f / (D.T - 1)).toFixed(3)}%"></div>`;
     }).join("");
@@ -593,7 +596,7 @@
     document.querySelectorAll(".rally").forEach((b) => b.classList.toggle("on", b.dataset.uid === uid));
     const f0 = Math.max(0, ...D.players.map((p) => p.f0));
     lastHit = -1; setFrame(Q.f != null ? +Q.f : f0); buildFlight(); resize();
-    video.addEventListener("loadeddata", () => { video.currentTime = frame / D.fps; }, { once: true });
+    for (const v of [video, video2]) v.addEventListener("loadeddata", () => { v.currentTime = frame / D.fps; }, { once: true });
     $("loading").style.display = "none";
   }
 
