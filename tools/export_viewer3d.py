@@ -1,4 +1,5 @@
-"""Data for the 3D rally viewer (docs/viewer): the final student on held-out CCTV rallies, nothing else.
+"""Data for the 3D rally viewer (docs/viewer): the final student on CCTV rallies (held-out matches, plus a few
+training-match singles rallies, flagged "train", since every held-out match is doubles).
 
 Per rally: the broadcast camera (BirdsCourt), and per frame the student's shuttle, every present player's 24 SMPL
 joints, each player's racket (grip at the racket-hand wrist, head 0.47 m along the predicted direction) and the hits
@@ -108,73 +109,175 @@ def r(x, d=3):
     return None if x is None or not np.all(np.isfinite(x)) else np.round(np.asarray(x, float), d).tolist()
 
 
+def merge_side(o, per_side):
+    """One player per court side and per slot (singles: per_side=1). The detector can lose a player and pick them up
+    under a new id; the student then has two half-present tracks of one person, and the viewer would hold the absent
+    one frozen. Tracks on the same side are merged frame by frame: a frame takes the track that is present (if both
+    are, the one that has been present longer). Hit owners are remapped."""
+    out, remap = [], {}
+    for side in ("near", "far"):
+        ps = [(i, p) for i, p in enumerate(o["players"]) if p["side"] == side]
+        if len(ps) <= per_side:
+            for i, p in ps:
+                remap[i] = len(out)
+                out.append(p)
+            continue
+        ps.sort(key=lambda ip: -sum(ip[1]["on"]))
+        T = len(ps[0][1]["on"])
+        m = {k: [None] * T for k in ("j", "rk", "fn")}
+        on = [0] * T
+        for t in range(T):
+            for i, p in ps:
+                if p["on"][t] and p["j"][t] is not None:
+                    for k in m:
+                        m[k][t] = p[k][t]
+                    on[t] = 1
+                    break
+        fr = [t for t in range(T) if on[t]]
+        base = dict(ps[0][1])
+        base.update(m, on=on, f0=fr[0], f1=fr[-1])
+        for i, _ in ps:
+            remap[i] = len(out)
+        out.append(base)
+    o["hits"] = [dict(h, p=remap.get(h["p"], -1)) for h in o["hits"]]
+    o["players"] = out
+    return o
+
+
+def rodrigues(rv):
+    rv = np.asarray(rv, float)
+    th = np.linalg.norm(rv)
+    if th < 1e-12:
+        return np.eye(3)
+    k = rv / th
+    K = np.array([[0, -k[2], k[1]], [k[2], 0, -k[0]], [-k[1], k[0], 0]])
+    return np.eye(3) + np.sin(th) * K + (1 - np.cos(th)) * K @ K
+
+
+def detections(f, cam, sl, slots):
+    """What the network is given, back in the picture: each input ray (court frame, from the camera centre) projected
+    into the broadcast camera (pinhole, no distortion), as image fractions (u/w, v/h). Per frame: per exported player
+    the 17 COCO keypoints [u, v, conf] (null where the slot is empty), the shuttle [u, v] where detected, and racket
+    boxes [u, v, diagonal as a fraction of the width, conf]."""
+    R, fpx, (w, h) = rodrigues(cam["rvec"]), float(cam["f"]), cam["size"]
+
+    def px(d):  # (..., 3) court-frame directions -> (..., 2) image fractions, NaN behind the camera / missing
+        c = np.asarray(d, float) @ R.T
+        z = c[..., 2]
+        ok = np.isfinite(z) & (z > 1e-6)
+        z = np.where(ok, z, np.nan)
+        return np.stack([(fpx * c[..., 0] / z + w / 2) / w, (fpx * c[..., 1] / z + h / 2) / h], -1)
+
+    kp, kc = px(np.asarray(f["kp_dir"])[sl]), np.asarray(f["kp_conf"])[sl]  # (T,P,17,2), (T,P,17)
+    sh, sv = px(np.asarray(f["sh_dir"])[sl]), np.asarray(f["sh_vis"])[sl] > 0
+    rk, rs, rc = px(np.asarray(f["rk_dir"])[sl]), np.asarray(f["rk_size"])[sl], np.asarray(f["rk_conf"])[sl]
+    pres = np.asarray(f["present"])[sl] > 0
+    out = []
+    for t in range(len(kp)):
+        pl = []
+        for q in slots:
+            if not pres[t, q]:
+                pl.append(None)
+                continue
+            a = np.concatenate([kp[t, q], kc[t, q, :, None]], 1)
+            a[~np.isfinite(a).all(1)] = 0
+            pl.append(np.round(a, 3).reshape(-1).tolist())
+        rks = [[*np.round(rk[t, i], 3).tolist(), round(float(fpx * rs[t, i] / w), 3), round(float(rc[t, i]), 2)]
+               for i in range(rk.shape[1]) if rc[t, i] > 0 and np.isfinite(rk[t, i]).all()]
+        out.append({"p": pl, "s": np.round(sh[t], 3).tolist() if sv[t] and np.isfinite(sh[t]).all() else None, "r": rks})
+    return out
+
+
+def student_rally(model, uid, k0=0, T=None, det=False):
+    """The student's display-ready output on CCTV rally uid, frames k0 .. k0+T-1 of its clip."""
+    f = TR.load_feats(os.path.join(TR.OBS, "cctv", uid + ".npz"))
+    o = TR.infer(model, f)
+    fps = float(np.asarray(f["fps"]).reshape(-1)[0]) if "fps" in f else 25.0
+    T = len(f["C"]) - k0 if T is None else min(T, len(f["C"]) - k0)
+    sl = slice(k0, k0 + T)
+    pres = (np.asarray(f["present"]) > 0)[sl]  # (T, P)
+    J = o["joints24"][sl]  # (T, P, 24, 3)
+    P = J.shape[1]
+    hand = (o["hand_p"].mean(0) > 0.5).astype(int)  # 1 = right hand holds the racket
+    u = o["racket_u"][sl]
+    S = o["shuttle"][sl]
+    hp = 1 / (1 + np.exp(-o["hit"][sl]))  # (T, P)
+    pk = TR.hits_from(hp.max(1))
+    Js = np.stack([smooth(J[:, q], pres[:, q]) for q in range(P)], 1)
+    us = np.stack([smooth(u[:, q], pres[:, q]) for q in range(P)], 1)
+    us = us / (np.linalg.norm(us, axis=-1, keepdims=True) + 1e-9)
+    Ss = smooth(S, np.ones(T, bool), k=max(1, SMOOTH - 1))
+    if CONTACT:
+        hh = [{"f": int(k), "slot": int(np.argmax(hp[k]))} for k in pk]
+        Js, us = contact_swing24(Ss, Js, us, pres, hh, hand, fps)
+    from export_rallynet_viewer import face_normals
+    players = []
+    for q in range(P):
+        if pres[:, q].sum() < 10:
+            continue
+        wr = Js[:, q, R_WRIST if hand[q] else L_WRIST]
+        head = wr + RN.GRIP_TO_HEAD * us[:, q]
+        fn = face_normals(np.where(pres[:, q, None], wr, np.nan), np.where(pres[:, q, None], us[:, q], np.nan))
+        fn = steady_face(fn, us[:, q], pres[:, q])
+        fr = np.where(pres[:, q])[0]
+        players.append({
+            "hand": "R" if hand[q] else "L",
+            "f0": int(fr[0]), "f1": int(fr[-1]),
+            "on": pres[:, q].astype(int).tolist(),
+            "j": [r(Js[t, q].reshape(-1), 3) if pres[t, q] else None for t in range(T)],
+            "rk": [r(np.r_[wr[t], head[t]], 3) if pres[t, q] else None for t in range(T)],
+            "fn": [r(fn[t], 3) if pres[t, q] else None for t in range(T)],  # racket-face normal, turning smoothly
+            "side": "near" if np.nanmedian(Js[pres[:, q], q, 0, 1]) < NET_Y else "far",
+        })
+    slot = [q for q in range(P) if pres[:, q].sum() >= 10]  # slot -> exported player index
+    hits = [{"f": int(k), "p": slot.index(int(np.argmax(hp[k]))) if int(np.argmax(hp[k])) in slot else -1} for k in pk]
+    o = {"fps": fps, "T": T, "shuttle": [r(Ss[t]) for t in range(T)], "players": players, "hits": hits}
+    if det:
+        cam = json.load(open(os.path.join(ROOT, "outputs", "cctv", "calib_bc", uid + ".json")))["cam"]
+        o["det"] = detections(f, cam, sl, slot)
+    return o
+
+
+def merge_index(path, entries):
+    """index.json keeps every rally exported before; entries replace rallies with the same uid."""
+    old = json.load(open(path)) if os.path.exists(path) else []
+    new = {e["uid"]: e for e in entries}
+    out = [{**e, **new.pop(e["uid"])} if e["uid"] in new else e for e in old]  # in place, keeping hand-set fields (name)
+    json.dump(out + list(new.values()), open(path, "w"), indent=1)
+
+
 def main():
     out_dir, uids = sys.argv[1], sys.argv[2:]
     os.makedirs(os.path.join(out_dir, "d"), exist_ok=True)
     os.makedirs(os.path.join(out_dir, "v"), exist_ok=True)
     model = TR.load_model(os.environ.get("TAG", "t3"))
     xv = json.load(open(os.path.join(ROOT, "outputs", "xview", "cctv_t3.json")))
+    # training-match rallies shown as examples (scored the same way, by the side camera, but seen in training)
+    xtr_p = os.path.join(ROOT, "outputs", "xview", "cctv_t3_train_demo.json")
+    xtr = json.load(open(xtr_p)) if os.path.exists(xtr_p) else {}
     index = []
-    for uid in uids:
-        f = TR.load_feats(os.path.join(TR.OBS, "cctv", uid + ".npz"))
-        o = TR.infer(model, f)
-        T = len(f["C"])
-        fps = float(np.asarray(f["fps"]).reshape(-1)[0]) if "fps" in f else 25.0
-        pres = np.asarray(f["present"]) > 0  # (T, P)
-        J = o["joints24"]  # (T, P, 24, 3)
-        P = J.shape[1]
-        hand = (o["hand_p"].mean(0) > 0.5).astype(int)  # 1 = right hand holds the racket
-        u = o["racket_u"]  # (T, P, 3)
-        S = o["shuttle"]
-        hp = 1 / (1 + np.exp(-o["hit"]))  # (T, P)
-        pk = TR.hits_from(hp.max(1))
-        Js = np.stack([smooth(J[:, q], pres[:, q]) for q in range(P)], 1)
-        us = np.stack([smooth(u[:, q], pres[:, q]) for q in range(P)], 1)
-        us = us / (np.linalg.norm(us, axis=-1, keepdims=True) + 1e-9)
-        Ss = smooth(S, np.ones(T, bool), k=max(1, SMOOTH - 1))
-        if CONTACT:
-            hh = [{"f": int(k), "slot": int(np.argmax(hp[k]))} for k in pk]
-            Js, us = contact_swing24(Ss, Js, us, pres, hh, hand, fps)
-        players = []
-        for q in range(P):
-            if pres[:, q].sum() < 10:
-                continue
-            wr = Js[:, q, R_WRIST if hand[q] else L_WRIST]
-            head = wr + RN.GRIP_TO_HEAD * us[:, q]
-            from export_rallynet_viewer import face_normals
-            fn = face_normals(np.where(pres[:, q, None], wr, np.nan), np.where(pres[:, q, None], us[:, q], np.nan))
-            fn = steady_face(fn, us[:, q], pres[:, q])
-            fr = np.where(pres[:, q])[0]
-            players.append({
-                "hand": "R" if hand[q] else "L",
-                "f0": int(fr[0]), "f1": int(fr[-1]),
-                "on": pres[:, q].astype(int).tolist(),
-                "j": [r(Js[t, q].reshape(-1), 3) if pres[t, q] else None for t in range(T)],
-                "rk": [r(np.r_[wr[t], head[t]], 3) if pres[t, q] else None for t in range(T)],
-                "fn": [r(fn[t], 3) if pres[t, q] else None for t in range(T)],  # racket-face normal, turning smoothly
-                "side": "near" if np.nanmedian(Js[pres[:, q], q, 0, 1]) < NET_Y else "far",
-            })
-        hits = [{"f": int(k), "p": int(np.argmax(hp[k]))} for k in pk]
-        # who among the exported players: map slot -> exported index
-        slot = [q for q in range(P) if pres[:, q].sum() >= 10]
-        for h in hits:
-            h["p"] = slot.index(h["p"]) if h["p"] in slot else -1
+    for arg in uids:  # uid, or uid:k0 to start the clip at frame k0 (e.g. after a cut from a close-up)
+        uid, k0 = (arg.split(":") + ["0"])[:2]
+        k0 = int(k0)
+        d = student_rally(model, uid, k0, det=True)
+        train = uid not in xv
+        st = xtr.get(uid, {}) if train else xv[uid]
         cam = json.load(open(os.path.join(ROOT, "outputs", "cctv", "calib_bc", uid + ".json")))["cam"]
-        st = xv.get(uid, {})
-        d = {"uid": uid, "fps": fps, "T": T, "cam": cam, "shuttle": [r(Ss[t]) for t in range(T)],
-             "players": players, "hits": hits,
+        d = {"uid": uid, **d, "cam": cam, "train": train, "k0": k0,
              "stats": {"shuttle_cm": None if st.get("shuttle") is None else round(100 * st["shuttle"], 1),
                        "player_cm": None if st.get("player") is None else round(100 * st["player"], 1),
                        "n_shuttle": st.get("n_sh"), "n_player": st.get("n_pl")},
-             "singles": len(players) <= 2, "display": {"smooth": SMOOTH, "contact": CONTACT}}
+             "singles": len(d["players"]) <= 2, "display": {"smooth": SMOOTH, "contact": CONTACT}}
         json.dump(d, open(os.path.join(out_dir, "d", uid + ".json"), "w"), separators=(",", ":"))
         src = os.path.join(ROOT, "data", "cctv", "clips", uid + ".mp4")
         dst = os.path.join(out_dir, "v", uid + ".mp4")
-        subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), "-loglevel", "error", "-y", "-i", src, "-an", "-c:v", "libx264", "-preset", "slow",
+        trim = ["-vf", f"select=gte(n\\,{k0}),setpts=PTS-STARTPTS"] if k0 else []
+        subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), "-loglevel", "error", "-y", "-i", src, *trim, "-an", "-c:v", "libx264", "-preset", "slow",
                         "-crf", "24", "-pix_fmt", "yuv420p", "-movflags", "+faststart", dst], check=True)
-        index.append({"uid": uid, "sec": round(T / fps, 1), "players": len(players), "hits": len(hits), **d["stats"]})
-        print(uid, T, "players", len(players), "hits", len(hits), d["stats"], flush=True)
-    json.dump(index, open(os.path.join(out_dir, "d", "index.json"), "w"), indent=1)
+        index.append({"uid": uid, "sec": round(d["T"] / d["fps"], 1), "players": len(d["players"]), "hits": len(d["hits"]),
+                      "train": train, **d["stats"]})
+        print(uid, d["T"], "players", len(d["players"]), "hits", len(d["hits"]), d["stats"], flush=True)
+    merge_index(os.path.join(out_dir, "d", "index.json"), index)
 
 
 if __name__ == "__main__":

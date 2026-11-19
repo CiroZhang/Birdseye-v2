@@ -1,110 +1,110 @@
 [
  {
+  "uid": "d1026_0085",
+  "name": "Naraoka vs Popov",
+  "sec": 21.1,
+  "players": 2,
+  "hits": 20,
+  "train": true,
+  "shuttle_cm": 13.0,
+  "player_cm": 8.1,
+  "n_shuttle": 220,
+  "n_player": 867
+ },
+ {
   "uid": "d1026_0321",
   "sec": 13.6,
   "players": 4,
   "hits": 15,
+  "train": false,
   "shuttle_cm": 6.8,
   "player_cm": 8.3,
   "n_shuttle": 148,
-  "n_player": 961
+  "n_player": 961,
+  "name": "Luo / Wang vs Nakade / Takahashi"
+ },
+ {
+  "uid": "sf_0541",
+  "sec": 17.7,
+  "players": 2,
+  "hits": 13,
+  "train": true,
+  "shuttle_cm": 7.7,
+  "player_cm": 7.5,
+  "n_shuttle": 170,
+  "n_player": 772,
+  "name": "Gunawan vs Antonsen"
  },
  {
   "uid": "sf_0799",
   "sec": 16.8,
   "players": 4,
   "hits": 19,
+  "train": false,
   "shuttle_cm": 7.0,
   "player_cm": 11.0,
   "n_shuttle": 106,
-  "n_player": 1067
+  "n_player": 1067,
+  "name": "Tee / Yap vs He / Ren"
  },
  {
   "uid": "d1026_0316",
   "sec": 21.2,
   "players": 4,
   "hits": 25,
+  "train": false,
   "shuttle_cm": 9.0,
   "player_cm": 10.7,
   "n_shuttle": 170,
-  "n_player": 1577
+  "n_player": 1577,
+  "name": "Luo / Wang vs Nakade / Takahashi"
  },
  {
   "uid": "sf_0323",
   "sec": 12.0,
   "players": 4,
   "hits": 15,
+  "train": false,
   "shuttle_cm": 9.1,
   "player_cm": 9.4,
   "n_shuttle": 128,
-  "n_player": 816
+  "n_player": 816,
+  "name": "Feng / Huang vs Goh / Lai"
+ },
+ {
+  "uid": "d1026_0258",
+  "sec": 11.6,
+  "players": 2,
+  "hits": 11,
+  "train": true,
+  "shuttle_cm": 16.1,
+  "player_cm": 13.6,
+  "n_shuttle": 84,
+  "n_player": 484,
+  "name": "Okuhara vs Wang Zhiyi"
  },
  {
   "uid": "sf_0368",
   "sec": 17.8,
   "players": 4,
   "hits": 20,
+  "train": false,
   "shuttle_cm": 12.8,
   "player_cm": 10.5,
   "n_shuttle": 133,
-  "n_player": 1264
+  "n_player": 1264,
+  "name": "Feng / Huang vs Goh / Lai"
  },
  {
   "uid": "d1026_0743",
   "sec": 14.8,
   "players": 4,
   "hits": 15,
+  "train": false,
   "shuttle_cm": 12.8,
   "player_cm": 8.5,
   "n_shuttle": 151,
-  "n_player": 1196
- },
- {
-  "uid": "d1026_0085",
-  "mode": "teacher",
-  "sec": 19.3,
-  "players": 2,
-  "hits": 19,
-  "labelled": 88.0
- },
- {
-  "uid": "d1026_0258",
-  "mode": "teacher",
-  "sec": 10.1,
-  "players": 2,
-  "hits": 10,
-  "labelled": 89.0
- },
- {
-  "uid": "d1026_0554",
-  "mode": "teacher",
-  "sec": 5.8,
-  "players": 2,
-  "hits": 6,
-  "labelled": 93.0
- },
- {
-  "uid": "sf_0174",
-  "mode": "teacher",
-  "sec": 8.8,
-  "players": 2,
-  "hits": 7,
-  "labelled": 92.0
- },
- {
-  "uid": "sf_0541",
-  "mode": "teacher",
-  "sec": 14.0,
-  "players": 2,
-  "hits": 13,
-  "labelled": 89.0
- },
- {
-  "uid": "sf_0702",
-  "mode": "teacher",
-  "sec": 9.3,
-  "players": 4,
-  "hits": 15,
-  "labelled": 54.0
+  "n_player": 1196,
+  "name": "Nomura / Shimogami vs Tee / Yap"
  }
 ]

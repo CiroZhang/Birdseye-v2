@@ -32,11 +32,15 @@
   .btn svg { width: 17px; height: 17px; fill: currentColor; }
   .btn.off { background: #d4d8dd; color: #5d6670; cursor: default; }
   .teaser { margin: 28px auto 6px; }
-  .frame { border-radius: 14px; overflow: hidden; box-shadow: 0 10px 40px rgba(16, 24, 32, .18); background: #0b1016; }
-  .frame iframe { display: block; width: 100%; height: 1010px; border: 0; }
+  .frame { overflow: hidden; background: #e6e8eb; border-radius: 8px; }
+  .frame iframe { display: block; width: 100%; height: 790px; border: 0; }
+  .method-viewer iframe { height: 830px; }
+  @media (max-width: 1140px) { .method-viewer iframe { height: 1360px; } }
+  @media (max-width: 700px) { .method-viewer iframe { height: 1560px; } }
+  .method-viewer { margin: 34px 0 6px; width: min(1408px, calc(100vw - 32px)); position: relative; left: 50%; transform: translateX(-50%); }
   .wide { max-width: 1440px; }
-  @media (max-width: 1140px) { .frame iframe { height: 1500px; } }
-  @media (max-width: 700px) { .frame iframe { height: 1900px; } }
+  @media (max-width: 1140px) { .frame iframe { height: 1440px; } }
+  @media (max-width: 700px) { .frame iframe { height: 1840px; } }
   .caption { color: var(--ink-2); font-size: 15px; margin: 12px auto 0; max-width: 860px; text-align: center; }
   .caption a { white-space: nowrap; }
   section { padding-block: 40px 8px; }
@@ -88,11 +92,12 @@
 </header>
 
 <div class="container wide">
-  <div class="teaser frame"><iframe src="viewer/" title="Interactive 3D rally viewer" loading="lazy" allow="fullscreen"></iframe></div>
-  <p class="caption"><b>Try it.</b> Press play, drag to orbit, or press 1&ndash;6 for cameras. <i>Student</i> shows
-    rallies from four matches the network never trained on, reconstructed from the broadcast video alone; the panel on
-    the right draws the 3D result back over that video. <i>Teacher</i> shows the four synchronised venue cameras the
-    training labels come from. <a href="viewer/">Open full screen &rarr;</a></p>
+  <div class="teaser frame"><iframe src="viewer/?embed=1" title="Interactive 3D rally viewer" loading="lazy" allow="fullscreen"></iframe></div>
+  <p class="caption"><b>Try it.</b> Press play, drag to orbit, or press 1&ndash;6 for cameras. Birdseye reconstructs
+    each rally from the broadcast video alone; on the right are that video and what the network is given from it: the
+    calibrated camera and the detected keypoints, shuttle and racket boxes, with no pixels. The doubles rallies come
+    from four matches the network never trained on; every held-out match is doubles, so the three singles rallies come
+    from training matches. <a href="viewer/">Open full screen &rarr;</a></p>
 </div>
 
 <section class="container abstract">
@@ -182,6 +187,13 @@
       its certified labels while only ever seeing the broadcast view's detectors: BirdsCourt (court and camera),
       TrackNetV3 (shuttle), YOLOv8-pose (players) and YOLOv8 (rackets).</figcaption>
   </figure>
+  </div>
+  <div class="wide method-viewer">
+    <div class="frame"><iframe src="viewer/?mode=teacher&amp;embed=1" title="Teacher viewer" loading="lazy" allow="fullscreen"></iframe></div>
+    <p class="caption"><b>The teacher, and what the student learns from it.</b> Training rallies with the four
+      synchronised venue cameras the teacher fits. By default the student is drawn in full and the teacher faded
+      behind it; switch to <i>student</i> or <i>teacher</i> to see either alone. In teacher view, gold shuttle frames
+      are certified and become labels, and grey ones are left out. <a href="viewer/?mode=teacher">Open full screen &rarr;</a></p>
   </div>
 </section>
 

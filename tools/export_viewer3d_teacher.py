@@ -1,6 +1,7 @@
 """Teacher mode of the 3D rally viewer (docs/viewer): the multi-view teacher's 3D (bodies, rackets, shuttle with its
 labelled / unsure flag, hits) for the training-match rallies of the earlier teacher viewer (docs/teacher/d/*.json),
-converted to the viewer's format. The 2x2 four-camera video of each rally starts at the rally's first frame (k0).
+converted to the viewer's format, with the final student's output on the same frames. The 2x2 four-camera video of
+each rally starts at the rally's first frame (k0). Run with the student's env (see tools/export_viewer3d.py).
 
 usage: python tools/export_viewer3d_teacher.py SRC_DIR(docs/teacher) OUT_DIR(docs/viewer) uid [uid ...]
 """
@@ -9,7 +10,8 @@ import json, os, sys
 import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__))))
-from export_viewer3d import steady_face, r  # noqa: E402
+from export_viewer3d import steady_face, r, student_rally, merge_index, merge_side  # noqa: E402
+import train_rallynet as TR  # noqa: E402
 from export_rallynet_viewer import face_normals  # noqa: E402
 
 GRIP_TO_HEAD = 0.47
@@ -17,9 +19,10 @@ GRIP_TO_HEAD = 0.47
 
 def main():
     src, out, uids = sys.argv[1], sys.argv[2], sys.argv[3:]
-    os.makedirs(os.path.join(out, "d"), exist_ok=True)
-    idx_path = os.path.join(out, "d", "index.json")
-    index = [e for e in json.load(open(idx_path)) if e.get("mode", "student") == "student"] if os.path.exists(idx_path) else []
+    os.makedirs(os.path.join(out, "dt"), exist_ok=True)
+    idx_path = os.path.join(out, "dt", "index.json")
+    index = []
+    model = TR.load_model(os.environ.get("TAG", "t3"))
     for uid in uids:
         d = json.load(open(os.path.join(src, "d", uid + ".json")))
         k0, k1, fps = int(d["k0"]), int(d["k1"]), float(d.get("fps", 25))
@@ -63,12 +66,13 @@ def main():
              "hits": hits, "video": f"../teacher/v/{uid}.mp4", "cams": d.get("cams"),
              "stats": {"labelled_frac": round(100 * float(d.get("conf_frac", 0)), 0), "hits": len(hits),
                        "student_cm": st.get("med_cm")},
-             "singles": len(players) <= 2}
-        json.dump(o, open(os.path.join(out, "d", uid + ".json"), "w"), separators=(",", ":"))
+             "singles": len(players) <= 2,
+             "student": merge_side(student_rally(model, uid, k0, T), 1 if len(players) <= 2 else 2)}  # the final student on the same frames, for comparison
+        json.dump(o, open(os.path.join(out, "dt", uid + ".json"), "w"), separators=(",", ":"))
         index.append({"uid": uid, "mode": "teacher", "sec": round(T / fps, 1), "players": len(players), "hits": len(hits),
                       "labelled": o["stats"]["labelled_frac"]})
         print(uid, T, "players", len(players), "hits", len(hits), flush=True)
-    json.dump(index, open(idx_path, "w"), indent=1)
+    merge_index(idx_path, index)
 
 
 if __name__ == "__main__":
